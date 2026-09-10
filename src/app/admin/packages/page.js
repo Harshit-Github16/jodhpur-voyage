@@ -17,248 +17,445 @@ import {
   Package,
   X,
   Filter,
+  FileText,
+  Calendar,
+  Layers,
+  Sparkles,
+  Tag,
+  CheckCircle2,
+  AlertCircle,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
+
+const CATEGORY_TAG_OPTIONS = [
+  'Rajasthan Tour',
+  'Golden Triangle',
+  'Desert Safari',
+  'Heritage & Royal',
+  'Walking Tours',
+  'Wildlife & Nature',
+  'Luxury Palace Retreat',
+];
 
 export default function PackagesManagementPage() {
   const { tours, loading, addTour, updateTour, deleteTour } = useTours();
   const { cities } = useCities();
 
   const [selectedCityFilter, setSelectedCityFilter] = useState('All');
+  const [selectedTagFilter, setSelectedTagFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPackage, setEditingPackage] = useState(null);
+  const [activeTab, setActiveTab] = useState('basic'); // 'basic' | 'itinerary' | 'inclusions' | 'media_seo'
 
   // Form State
   const [formData, setFormData] = useState({
     title: '',
+    slug: '',
     cityName: 'Jodhpur',
     category: 'Heritage & History',
+    categoryTag: 'Rajasthan Tour',
     duration: '4 Hours',
+    durationDays: 'Half Day',
     price: '',
     originalPrice: '',
     maxGroupSize: '15',
     location: '',
     description: '',
-    inclusions: '',
+    inclusions: 'Expert Historian Guide, Entry Tickets, Mineral Water',
+    exclusions: 'Airfare, Personal expenses, Camera fees',
+    pdfUrl: '',
     image: '',
+    galleryText: '',
     status: 'Active',
     featured: false,
+    itinerary: [
+      {
+        day: 1,
+        title: 'Arrival & Sightseeing Experience',
+        description: 'Guided tour of major landmark highlights and cultural walk.',
+        highlights: 'Main palace entrance, Museum, Sunset viewpoint',
+      },
+    ],
+    metaTitle: '',
+    metaDescription: '',
   });
 
   const openAddModal = () => {
     setEditingPackage(null);
+    setActiveTab('basic');
     setFormData({
       title: '',
+      slug: '',
       cityName: selectedCityFilter !== 'All' ? selectedCityFilter : 'Jodhpur',
       category: 'Heritage & History',
-      duration: '4 Hours',
+      categoryTag: 'Rajasthan Tour',
+      duration: '3 Days / 2 Nights',
+      durationDays: '3 Days / 2 Nights',
       price: '',
       originalPrice: '',
       maxGroupSize: '15',
       location: 'Jodhpur, Rajasthan',
       description: '',
-      inclusions: 'Expert Historian Guide, Entry Tickets, Mineral Water',
-      image: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=800&q=80',
+      inclusions: 'AC Luxury Transport, Expert Tour Guide, Monument Tickets, Mineral Water',
+      exclusions: 'Flight / Train tickets, Personal expenses, Gratuities',
+      pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+      image: '',
+      galleryText: '',
       status: 'Active',
-      featured: true,
+      featured: false,
+      itinerary: [
+        {
+          day: 1,
+          title: 'Day 1: Arrival & Royal Heritage Walk',
+          description: 'Check-in, welcome drinks, guided palace and old town walking trail.',
+          highlights: 'Palace entrance, Stepwell visit, Sunset chai',
+        },
+      ],
+      metaTitle: '',
+      metaDescription: '',
     });
     setIsModalOpen(true);
   };
 
   const openEditModal = (pkg) => {
     setEditingPackage(pkg);
+    setActiveTab('basic');
     setFormData({
       title: pkg.title || '',
+      slug: pkg.slug || '',
       cityName: pkg.cityName || 'Jodhpur',
       category: pkg.category || 'Heritage & History',
+      categoryTag: pkg.categoryTag || 'Rajasthan Tour',
       duration: pkg.duration || '4 Hours',
+      durationDays: pkg.durationDays || '1 Day',
       price: pkg.price || '',
       originalPrice: pkg.originalPrice || '',
       maxGroupSize: pkg.maxGroupSize || '15',
       location: pkg.location || '',
       description: pkg.description || '',
-      inclusions: Array.isArray(pkg.inclusions) ? pkg.inclusions.join(', ') : '',
+      inclusions: Array.isArray(pkg.inclusions) ? pkg.inclusions.join(', ') : pkg.inclusions || '',
+      exclusions: Array.isArray(pkg.exclusions) ? pkg.exclusions.join(', ') : pkg.exclusions || '',
+      pdfUrl: pkg.pdfUrl || '',
       image: pkg.image || '',
+      galleryText: Array.isArray(pkg.gallery) ? pkg.gallery.join('\n') : '',
       status: pkg.status || 'Active',
       featured: Boolean(pkg.featured),
+      itinerary: pkg.itinerary && pkg.itinerary.length > 0 ? pkg.itinerary : [
+        { day: 1, title: 'Day 1 Itinerary', description: pkg.description || '', highlights: 'Guided tour' }
+      ],
+      metaTitle: pkg.seo?.metaTitle || '',
+      metaDescription: pkg.seo?.metaDescription || '',
     });
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async (e) => {
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingPackage(null);
+  };
+
+  const handleTitleChange = (val) => {
+    const autoSlug = val
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-');
+    setFormData((prev) => ({
+      ...prev,
+      title: val,
+      slug: prev.slug ? prev.slug : autoSlug,
+      metaTitle: prev.metaTitle ? prev.metaTitle : `${val} | Jodhpur Voyage`,
+    }));
+  };
+
+  // Itinerary Day Helpers
+  const addItineraryDay = () => {
+    setFormData((prev) => ({
+      ...prev,
+      itinerary: [
+        ...prev.itinerary,
+        {
+          day: prev.itinerary.length + 1,
+          title: `Day ${prev.itinerary.length + 1}: `,
+          description: '',
+          highlights: '',
+        },
+      ],
+    }));
+  };
+
+  const removeItineraryDay = (index) => {
+    if (formData.itinerary.length <= 1) return;
+    setFormData((prev) => ({
+      ...prev,
+      itinerary: prev.itinerary
+        .filter((_, i) => i !== index)
+        .map((dayObj, i) => ({ ...dayObj, day: i + 1 })),
+    }));
+  };
+
+  const updateItineraryField = (index, field, value) => {
+    setFormData((prev) => {
+      const updated = [...prev.itinerary];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, itinerary: updated };
+    });
+  };
+
+  const handleSubmit = (e) => {
     e.preventDefault();
+    if (!formData.title || !formData.price) {
+      alert('Please fill in required fields (Title and Price).');
+      return;
+    }
+
+    const inclusionsArray = formData.inclusions
+      ? formData.inclusions.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+
+    const exclusionsArray = formData.exclusions
+      ? formData.exclusions.split(',').map((s) => s.trim()).filter(Boolean)
+      : [];
+
+    const galleryArray = formData.galleryText
+      ? formData.galleryText.split('\n').map((s) => s.trim()).filter(Boolean)
+      : [];
 
     const payload = {
-      ...formData,
+      title: formData.title,
+      slug: formData.slug || formData.title.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+      cityName: formData.cityName,
+      cityId: `city-${formData.cityName.toLowerCase()}`,
+      category: formData.category,
+      categoryTag: formData.categoryTag,
+      duration: formData.duration,
+      durationDays: formData.durationDays,
       price: Number(formData.price),
-      originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
-      maxGroupSize: Number(formData.maxGroupSize),
-      inclusions: formData.inclusions
-        ? formData.inclusions.split(',').map((s) => s.trim()).filter(Boolean)
-        : [],
+      originalPrice: formData.originalPrice ? Number(formData.originalPrice) : Number(formData.price) * 1.25,
+      maxGroupSize: Number(formData.maxGroupSize) || 15,
+      location: formData.location || `${formData.cityName}, Rajasthan`,
+      description: formData.description,
+      inclusions: inclusionsArray,
+      exclusions: exclusionsArray,
+      pdfUrl: formData.pdfUrl,
+      image: formData.image || 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=800&q=80',
+      gallery: galleryArray,
+      status: formData.status,
+      featured: formData.featured,
+      itinerary: formData.itinerary,
+      seo: {
+        metaTitle: formData.metaTitle || formData.title,
+        metaDescription: formData.metaDescription || formData.description.slice(0, 150),
+      },
     };
 
     if (editingPackage) {
-      await updateTour(editingPackage.id, payload);
+      updateTour(editingPackage.id, payload);
     } else {
-      await addTour(payload);
+      addTour(payload);
     }
 
-    setIsModalOpen(false);
+    closeModal();
   };
 
-  // Filter packages by city and search query
+  const handleDelete = (id, title) => {
+    if (confirm(`Are you sure you want to delete tour package: "${title}"?`)) {
+      deleteTour(id);
+    }
+  };
+
+  // Filtered packages
   const filteredPackages = tours.filter((pkg) => {
-    const matchCity =
-      selectedCityFilter === 'All' ||
-      (pkg.cityName || pkg.location || '').toLowerCase().includes(selectedCityFilter.toLowerCase());
-    const matchSearch =
-      pkg.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (pkg.location || '').toLowerCase().includes(searchQuery.toLowerCase());
-    return matchCity && matchSearch;
+    const matchesCity = selectedCityFilter === 'All' || pkg.cityName === selectedCityFilter;
+    const matchesTag = selectedTagFilter === 'All' || pkg.categoryTag === selectedTagFilter || pkg.category === selectedTagFilter;
+    const matchesSearch =
+      (pkg.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (pkg.cityName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (pkg.category || '').toLowerCase().includes(searchQuery.toLowerCase());
+    return matchesCity && matchesTag && matchesSearch;
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header Bar */}
-      <div className="bg-white rounded-xl p-6 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-white rounded-xl p-5 border border-slate-200/90 flex flex-col md:flex-row md:items-center justify-between gap-4 shadow-sm">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900">City-wise Tour Packages</h1>
-            <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-              {tours.length} Total Packages
+          <div className="flex items-center gap-2.5">
+            <h1 className="text-lg font-black text-slate-900 tracking-tight">Tour Packages & Itineraries</h1>
+            <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-900 border border-amber-300">
+              {tours.length} Live Tours
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Create and organize experiential packages categorized by destination cities for live customer booking.
+            Build day-by-day itineraries, pricing, inclusions/exclusions, category tags, and downloadable PDF brochures.
           </p>
         </div>
 
         <button
           onClick={openAddModal}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold shadow-sm transition-colors self-start sm:self-auto"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black transition-all shadow-xs cursor-pointer"
         >
-          <Plus className="w-4 h-4 text-amber-400" />
-          <span>Create Package</span>
+          <Plus className="w-4 h-4" />
+          <span>Create Tour Package</span>
         </button>
       </div>
 
-      {/* Filter by City Strip & Search */}
-      <div className="bg-white rounded-xl p-3.5 border border-slate-200 space-y-3">
-        <div className="flex flex-col md:flex-row md:items-center gap-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-            <input
-              type="text"
-              placeholder="Search packages by title, location, highlights..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-1.5 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
-            />
+      {/* Filter and Search Bar */}
+      <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 flex flex-col md:flex-row gap-3 items-center justify-between shadow-sm">
+        <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
+          {/* City Filter */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700">
+            <MapPin className="w-3.5 h-3.5 text-amber-600" />
+            <select
+              value={selectedCityFilter}
+              onChange={(e) => setSelectedCityFilter(e.target.value)}
+              className="bg-transparent font-semibold focus:outline-none text-xs"
+            >
+              <option value="All">All Destination Cities</option>
+              {cities.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
           </div>
 
-          {/* City Filter Pills */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0">
-            <div className="flex items-center gap-1 text-[11px] font-bold text-slate-400 uppercase mr-1">
-              <MapPin className="w-3.5 h-3.5 text-amber-600" />
-              <span>City:</span>
-            </div>
-            <button
-              onClick={() => setSelectedCityFilter('All')}
-              className={`px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors ${
-                selectedCityFilter === 'All'
-                  ? 'bg-[#0f172a] text-white'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-              }`}
+          {/* Category Tag Filter */}
+          <div className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1.5 text-xs text-slate-700">
+            <Tag className="w-3.5 h-3.5 text-amber-600" />
+            <select
+              value={selectedTagFilter}
+              onChange={(e) => setSelectedTagFilter(e.target.value)}
+              className="bg-transparent font-semibold focus:outline-none text-xs"
             >
-              All Cities
-            </button>
-            {cities.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setSelectedCityFilter(c.name)}
-                className={`px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors ${
-                  selectedCityFilter === c.name
-                    ? 'bg-[#0f172a] text-white'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
-              >
-                {c.name}
-              </button>
-            ))}
+              <option value="All">All Categories / Tags</option>
+              {CATEGORY_TAG_OPTIONS.map((tag) => (
+                <option key={tag} value={tag}>
+                  {tag}
+                </option>
+              ))}
+            </select>
           </div>
+        </div>
+
+        <div className="relative w-full md:w-72">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search tours by name, location..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-9 pr-3 py-1.5 bg-slate-50 border border-slate-200 rounded-lg text-xs focus:outline-none focus:border-black"
+          />
         </div>
       </div>
 
       {/* Packages Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {filteredPackages.map((pkg) => (
           <div
             key={pkg.id}
-            className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between"
+            className="bg-white rounded-xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col group"
           >
-            <div className="relative h-44 w-full bg-slate-100">
-              <img src={pkg.image} alt={pkg.title} className="w-full h-full object-cover" />
-              <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
-                <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#0f172a]/90 text-white shadow-sm flex items-center gap-1">
-                  <MapPin className="w-3 h-3 text-amber-400" />
-                  {pkg.cityName || 'Jodhpur'}
+            {/* Tour Image with Badges */}
+            <div className="relative h-48 bg-slate-100 overflow-hidden">
+              <img
+                src={pkg.image || 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=800&q=80'}
+                alt={pkg.title}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+              />
+              <div className="absolute top-3 left-3 flex flex-wrap gap-1.5">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-slate-900/80 backdrop-blur-xs text-white">
+                  {pkg.cityName}
                 </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-white text-slate-900 shadow-sm">
-                  {pkg.category}
-                </span>
+                {pkg.categoryTag && (
+                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-slate-950 shadow-xs">
+                    {pkg.categoryTag}
+                  </span>
+                )}
               </div>
-              <div className="absolute top-2.5 right-2.5">
-                <StatusBadge status={pkg.status} />
+
+              <div className="absolute top-3 right-3">
+                <StatusBadge status={pkg.status || 'Active'} />
+              </div>
+
+              <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between text-white text-[11px] font-bold drop-shadow-md">
+                <div className="flex items-center gap-1 bg-black/60 backdrop-blur-xs px-2 py-0.5 rounded-md">
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  <span>{pkg.duration}</span>
+                </div>
+                {pkg.pdfUrl && (
+                  <div className="flex items-center gap-1 bg-amber-500 text-slate-950 px-2 py-0.5 rounded-md font-extrabold text-[10px]">
+                    <FileText className="w-3 h-3" />
+                    <span>PDF Itinerary</span>
+                  </div>
+                )}
               </div>
             </div>
 
+            {/* Tour Body */}
             <div className="p-4 flex-1 flex flex-col justify-between space-y-3">
               <div>
-                <div className="flex items-center gap-1 text-slate-700 text-xs font-semibold mb-1">
-                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                  <span>{pkg.rating || 4.9}</span>
-                  <span className="text-slate-400 font-normal">({pkg.reviewsCount || 0} reviews)</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-[10px] font-bold text-amber-700 uppercase tracking-wider">
+                    {pkg.category}
+                  </span>
+                  <div className="flex items-center gap-1 text-[11px] font-bold text-slate-700">
+                    <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                    <span>{pkg.rating || 4.9}</span>
+                    <span className="text-slate-400">({pkg.reviewsCount || 0})</span>
+                  </div>
                 </div>
 
-                <h3 className="font-bold text-slate-900 text-sm line-clamp-2 leading-tight">
+                <h3 className="text-sm font-bold text-slate-900 line-clamp-2 mt-1">
                   {pkg.title}
                 </h3>
-
-                <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
+                <p className="text-xs text-slate-500 line-clamp-2 mt-1">
                   {pkg.description}
                 </p>
 
-                <div className="flex items-center gap-3 mt-2.5 pt-2.5 border-t border-slate-100 text-[11px] text-slate-600">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 text-slate-400" />
-                    {pkg.duration}
-                  </span>
-                  <span>•</span>
-                  <span className="flex items-center gap-1">
-                    <Users className="w-3 h-3 text-slate-400" />
-                    Max {pkg.maxGroupSize} Guests
-                  </span>
-                </div>
+                {/* Day-by-day Itinerary Badge Preview */}
+                {pkg.itinerary && pkg.itinerary.length > 0 && (
+                  <div className="mt-2.5 pt-2 border-t border-slate-100 flex items-center gap-1.5 text-[11px] text-slate-600">
+                    <Calendar className="w-3.5 h-3.5 text-amber-600" />
+                    <span className="font-semibold">
+                      {pkg.itinerary.length} {pkg.itinerary.length === 1 ? 'Day Plan' : 'Days Itinerary'}
+                    </span>
+                    <span className="text-slate-300">•</span>
+                    <span className="text-slate-500 truncate">{pkg.itinerary[0]?.title}</span>
+                  </div>
+                )}
               </div>
 
-              <div className="pt-2.5 border-t border-slate-100 flex items-center justify-between">
+              {/* Price & Action Footer */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Price per guest</span>
-                  <span className="text-base font-extrabold text-slate-900">₹{pkg.price}</span>
+                  <span className="text-[10px] text-slate-400 block font-semibold">Starting Price</span>
+                  <div className="flex items-baseline gap-1.5">
+                    <span className="text-base font-black text-slate-900">
+                      ₹{Number(pkg.price).toLocaleString()}
+                    </span>
+                    {pkg.originalPrice && pkg.originalPrice > pkg.price && (
+                      <span className="text-xs text-slate-400 line-through">
+                        ₹{Number(pkg.originalPrice).toLocaleString()}
+                      </span>
+                    )}
+                  </div>
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <button
                     onClick={() => openEditModal(pkg)}
-                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                    className="p-2 rounded-xl bg-slate-100 hover:bg-amber-50 hover:text-amber-800 text-slate-700 transition-colors cursor-pointer"
                     title="Edit Package"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                   <button
-                    onClick={() => deleteTour(pkg.id)}
-                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 transition-colors"
+                    onClick={() => handleDelete(pkg.id, pkg.title)}
+                    className="p-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
                     title="Delete Package"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -270,164 +467,506 @@ export default function PackagesManagementPage() {
         ))}
       </div>
 
-      {/* Package Add / Edit Modal */}
+      {/* Package Creation / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden">
-            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <h3 className="font-bold text-slate-900 text-sm">
-                {editingPackage ? 'Edit Travel Package' : 'Create New City Package'}
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-in fade-in duration-150">
+          <div className="bg-white rounded-3xl max-w-3xl w-full max-h-[90vh] flex flex-col shadow-2xl overflow-hidden border border-slate-200">
+            {/* Modal Header */}
+            <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50/80">
+              <div>
+                <h2 className="text-base font-black text-slate-900">
+                  {editingPackage ? 'Edit Tour Package & Itinerary' : 'Create New Tour Package'}
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Set package details, day-by-day plan, PDF brochure, pricing, and SEO tags.
+                </p>
+              </div>
               <button
-                onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 p-1"
+                onClick={closeModal}
+                className="p-2 rounded-full text-slate-400 hover:text-slate-800 hover:bg-slate-200/60 transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 space-y-3.5 text-xs">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                    Select City *
-                  </label>
-                  <select
-                    value={formData.cityName}
-                    onChange={(e) => setFormData({ ...formData, cityName: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
-                  >
-                    {cities.map((c) => (
-                      <option key={c.id} value={c.name}>
-                        {c.name} ({c.state})
-                      </option>
+            {/* Tab Navigation */}
+            <div className="px-6 pt-3 border-b border-slate-200 flex gap-2 overflow-x-auto bg-white">
+              <button
+                type="button"
+                onClick={() => setActiveTab('basic')}
+                className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === 'basic'
+                    ? 'border-amber-500 text-slate-950'
+                    : 'border-transparent text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                1. Basic Info & Pricing
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('itinerary')}
+                className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors whitespace-nowrap flex items-center gap-1.5 ${
+                  activeTab === 'itinerary'
+                    ? 'border-amber-500 text-slate-950'
+                    : 'border-transparent text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                <span>2. Day-by-Day Itinerary</span>
+                <span className="bg-amber-100 text-amber-900 text-[10px] px-1.5 py-0.2 rounded-full font-extrabold">
+                  {formData.itinerary.length}
+                </span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('inclusions')}
+                className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === 'inclusions'
+                    ? 'border-amber-500 text-slate-950'
+                    : 'border-transparent text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                3. Inclusions & Exclusions
+              </button>
+              <button
+                type="button"
+                onClick={() => setActiveTab('media_seo')}
+                className={`pb-2.5 px-3 text-xs font-bold border-b-2 transition-colors whitespace-nowrap ${
+                  activeTab === 'media_seo'
+                    ? 'border-amber-500 text-slate-950'
+                    : 'border-transparent text-slate-400 hover:text-slate-700'
+                }`}
+              >
+                4. Gallery, PDF & SEO
+              </button>
+            </div>
+
+            {/* Modal Body / Form */}
+            <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-4">
+              {/* TAB 1: BASIC INFO & PRICING */}
+              {activeTab === 'basic' && (
+                <div className="space-y-4 animate-in fade-in duration-100">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Package Title *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.title}
+                        onChange={(e) => handleTitleChange(e.target.value)}
+                        placeholder="e.g. 3-Day Royal Jodhpur & Osian Desert Glamping"
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none font-medium"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Destination City *
+                      </label>
+                      <select
+                        value={formData.cityName}
+                        onChange={(e) => setFormData({ ...formData, cityName: e.target.value })}
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                      >
+                        {cities.map((c) => (
+                          <option key={c.id} value={c.name}>
+                            {c.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Category Tag *
+                      </label>
+                      <select
+                        value={formData.categoryTag}
+                        onChange={(e) => setFormData({ ...formData, categoryTag: e.target.value })}
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                      >
+                        {CATEGORY_TAG_OPTIONS.map((tag) => (
+                          <option key={tag} value={tag}>
+                            {tag}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Duration (Display Text)
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.duration}
+                        onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
+                        placeholder="e.g. 3 Days / 2 Nights or 4 Hours"
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Max Group Size
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.maxGroupSize}
+                        onChange={(e) => setFormData({ ...formData, maxGroupSize: e.target.value })}
+                        placeholder="15"
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Offer Price (₹ INR) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        value={formData.price}
+                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                        placeholder="3499"
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none font-bold text-amber-700"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Original / Strike Price (₹ INR)
+                      </label>
+                      <input
+                        type="number"
+                        value={formData.originalPrice}
+                        onChange={(e) => setFormData({ ...formData, originalPrice: e.target.value })}
+                        placeholder="4200"
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Location / Meeting Point
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.location}
+                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                        placeholder="e.g. Clock Tower & Navchokiya, Jodhpur"
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="sm:col-span-2">
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        Package Overview / Summary
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={formData.description}
+                        onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                        placeholder="Detailed highlight of what makes this experience special..."
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div className="flex items-center gap-6 sm:col-span-2 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={formData.featured}
+                          onChange={(e) => setFormData({ ...formData, featured: e.target.checked })}
+                          className="w-4 h-4 text-amber-600 rounded focus:ring-amber-500"
+                        />
+                        <span className="text-xs font-bold text-slate-800">Featured Tour on Homepage</span>
+                      </label>
+
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-slate-700">Status:</span>
+                        <select
+                          value={formData.status}
+                          onChange={(e) => setFormData({ ...formData, status: e.target.value })}
+                          className="text-xs bg-white border border-slate-200 rounded-lg px-2.5 py-1 font-semibold"
+                        >
+                          <option value="Active">Active / Published</option>
+                          <option value="Draft">Draft</option>
+                          <option value="Archived">Archived</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: DAY-BY-DAY ITINERARY BUILDER */}
+              {activeTab === 'itinerary' && (
+                <div className="space-y-4 animate-in fade-in duration-100">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                        Day-by-Day Schedule Builder
+                      </h4>
+                      <p className="text-[11px] text-slate-500">
+                        Add structured schedule for each day of the journey.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addItineraryDay}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors cursor-pointer"
+                    >
+                      <Plus className="w-3.5 h-3.5 text-amber-400" />
+                      <span>Add Day {formData.itinerary.length + 1}</span>
+                    </button>
+                  </div>
+
+                  <div className="space-y-3">
+                    {formData.itinerary.map((dayPlan, idx) => (
+                      <div
+                        key={idx}
+                        className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-3 relative group"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="w-6 h-6 rounded-full bg-amber-500 text-slate-950 font-black text-xs flex items-center justify-center">
+                              {dayPlan.day || idx + 1}
+                            </span>
+                            <input
+                              type="text"
+                              value={dayPlan.title}
+                              onChange={(e) => updateItineraryField(idx, 'title', e.target.value)}
+                              placeholder={`Day ${idx + 1}: Title (e.g. Mehrangarh Fort & Stepwell Walk)`}
+                              className="font-bold text-xs text-slate-900 bg-white border border-slate-200 rounded-lg px-2.5 py-1 w-72 focus:outline-none focus:border-amber-500"
+                            />
+                          </div>
+
+                          {formData.itinerary.length > 1 && (
+                            <button
+                              type="button"
+                              onClick={() => removeItineraryDay(idx)}
+                              className="text-xs text-rose-600 hover:text-rose-800 font-semibold p-1 rounded hover:bg-rose-50"
+                            >
+                              Remove Day
+                            </button>
+                          )}
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                            Day Description / Activities
+                          </label>
+                          <textarea
+                            rows={2}
+                            value={dayPlan.description}
+                            onChange={(e) => updateItineraryField(idx, 'description', e.target.value)}
+                            placeholder="Detailed schedule of the day, sightseeing places, dining arrangements..."
+                            className="w-full px-3 py-2 text-xs bg-white border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="text-[11px] font-bold text-slate-600 block mb-1">
+                            Key Highlights / Tags
+                          </label>
+                          <input
+                            type="text"
+                            value={dayPlan.highlights}
+                            onChange={(e) => updateItineraryField(idx, 'highlights', e.target.value)}
+                            placeholder="e.g. Sheesh Mahal, Jaswant Thada, Blue city sunset view"
+                            className="w-full px-3 py-1.5 text-xs bg-white border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
                     ))}
-                  </select>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: INCLUSIONS & EXCLUSIONS */}
+              {activeTab === 'inclusions' && (
+                <div className="space-y-4 animate-in fade-in duration-100">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1 flex items-center gap-1.5">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Package Inclusions (comma-separated)</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formData.inclusions}
+                      onChange={(e) => setFormData({ ...formData, inclusions: e.target.value })}
+                      placeholder="AC Transport, Historian Guide, Entry Tickets, Mineral Water, Camel Safari"
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Separate each included item with a comma. They will be displayed as green check bullet points.
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1 flex items-center gap-1.5">
+                      <AlertCircle className="w-3.5 h-3.5 text-rose-500" />
+                      <span>Package Exclusions (comma-separated)</span>
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formData.exclusions}
+                      onChange={(e) => setFormData({ ...formData, exclusions: e.target.value })}
+                      placeholder="Airfare, Personal shopping, Gratuities, Alcoholic drinks"
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                    />
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Items that travelers must pay for separately.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 4: GALLERY, PDF & SEO */}
+              {activeTab === 'media_seo' && (
+                <div className="space-y-4 animate-in fade-in duration-100">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Primary Cover Image URL
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.image}
+                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
+                      placeholder="https://images.unsplash.com/photo-..."
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                    />
+                    {formData.image && (
+                      <div className="mt-2 h-28 w-48 rounded-xl overflow-hidden border border-slate-200">
+                        <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">
+                      Gallery Photos (1 URL per line)
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={formData.galleryText}
+                      onChange={(e) => setFormData({ ...formData, galleryText: e.target.value })}
+                      placeholder="https://images.unsplash.com/...&#10;https://images.unsplash.com/..."
+                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none font-mono text-[11px]"
+                    />
+                  </div>
+
+                  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">
+                    <label className="text-xs font-bold text-slate-800 block flex items-center gap-1.5">
+                      <FileText className="w-3.5 h-3.5 text-amber-700" />
+                      <span>Downloadable PDF Itinerary / Brochure Link</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={formData.pdfUrl}
+                      onChange={(e) => setFormData({ ...formData, pdfUrl: e.target.value })}
+                      placeholder="https://example.com/brochures/jodhpur-voyage-tour.pdf"
+                      className="w-full px-3 py-2 text-xs bg-white border border-amber-300 rounded-xl focus:border-amber-600 focus:outline-none"
+                    />
+                    <p className="text-[10px] text-amber-800">
+                      When guests click "Download Itinerary PDF", this brochure link will be triggered.
+                    </p>
+                  </div>
+
+                  <div className="space-y-3 pt-2 border-t border-slate-200">
+                    <h4 className="text-xs font-black text-slate-900 uppercase tracking-wider">
+                      SEO & Slug Settings
+                    </h4>
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        URL Slug
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.slug}
+                        onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
+                        placeholder="mehrangarh-fort-heritage-walk"
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        SEO Meta Title
+                      </label>
+                      <input
+                        type="text"
+                        value={formData.metaTitle}
+                        onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })}
+                        placeholder="Mehrangarh Fort Guided Tour Jodhpur | Jodhpur Voyage"
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="text-xs font-bold text-slate-700 block mb-1">
+                        SEO Meta Description
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={formData.metaDescription}
+                        onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
+                        placeholder="Explore the majestic 15th-century Mehrangarh Fort with private audio guides..."
+                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Footer Actions */}
+              <div className="pt-4 border-t border-slate-200 flex items-center justify-between">
+                <div className="flex gap-2">
+                  {activeTab !== 'basic' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (activeTab === 'media_seo') setActiveTab('inclusions');
+                        else if (activeTab === 'inclusions') setActiveTab('itinerary');
+                        else if (activeTab === 'itinerary') setActiveTab('basic');
+                      }}
+                      className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
+                    >
+                      ← Previous Tab
+                    </button>
+                  )}
+                  {activeTab !== 'media_seo' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (activeTab === 'basic') setActiveTab('itinerary');
+                        else if (activeTab === 'itinerary') setActiveTab('inclusions');
+                        else if (activeTab === 'inclusions') setActiveTab('media_seo');
+                      }}
+                      className="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-colors"
+                    >
+                      Next Tab →
+                    </button>
+                  )}
                 </div>
 
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                    Category
-                  </label>
-                  <select
-                    value={formData.category}
-                    onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={closeModal}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 transition-colors"
                   >
-                    <option value="Heritage & History">Heritage & History</option>
-                    <option value="Walking Tours">Walking Tours</option>
-                    <option value="Desert Safari">Desert Safari</option>
-                    <option value="Luxury & Royal">Luxury & Royal</option>
-                    <option value="Village & Culture">Village & Culture</option>
-                    <option value="Culinary & Food">Culinary & Food</option>
-                  </select>
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-black transition-colors shadow-sm cursor-pointer"
+                  >
+                    {editingPackage ? 'Save Changes' : 'Create Package'}
+                  </button>
                 </div>
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                  Package Title *
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={formData.title}
-                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                  placeholder="e.g. Mehrangarh Sunrise Heritage Trail"
-                  className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
-                />
-              </div>
-
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                    Price (₹ INR) *
-                  </label>
-                  <input
-                    type="number"
-                    required
-                    value={formData.price}
-                    onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                    placeholder="1499"
-                    className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                    Duration
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.duration}
-                    onChange={(e) => setFormData({ ...formData, duration: e.target.value })}
-                    placeholder="4 Hours"
-                    className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                    Max Group Size
-                  </label>
-                  <input
-                    type="number"
-                    value={formData.maxGroupSize}
-                    onChange={(e) => setFormData({ ...formData, maxGroupSize: e.target.value })}
-                    placeholder="15"
-                    className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
-                  />
-                </div>
-              </div>
-
-              <ImageUploader
-                label="Package Feature Image"
-                required={true}
-                value={formData.image}
-                onChange={(val) => setFormData({ ...formData, image: val })}
-                helperText="Upload package photo from device or paste image URL"
-              />
-
-              <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                  Package Description & Itinerary
-                </label>
-                <textarea
-                  rows={2}
-                  value={formData.description}
-                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                  placeholder="Describe the tour experience, attractions visited..."
-                  className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                  Inclusions (comma separated)
-                </label>
-                <input
-                  type="text"
-                  value={formData.inclusions}
-                  onChange={(e) => setFormData({ ...formData, inclusions: e.target.value })}
-                  placeholder="Guide, Mineral Water, Entry Tickets, High Tea"
-                  className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-slate-200 flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-5 py-1.5 rounded-lg bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-bold shadow-sm"
-                >
-                  {editingPackage ? 'Save Changes' : 'Create Package'}
-                </button>
               </div>
             </form>
           </div>

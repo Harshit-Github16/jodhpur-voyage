@@ -4,6 +4,11 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAdmin } from '@/context/AdminContext';
+import { useAuth } from '@/context/AuthContext';
+import { useEnquiries } from '@/context/EnquiryContext';
+import { useReviews } from '@/context/ReviewContext';
+import { useTours } from '@/context/TourContext';
+import { useCities } from '@/context/CityContext';
 import Logo from '@/components/common/Logo';
 import {
   LayoutDashboard,
@@ -12,172 +17,229 @@ import {
   BookOpen,
   Users,
   ShoppingBag,
-  ChevronLeft,
-  ChevronRight,
+  MessageSquare,
+  Star,
+  UserCheck,
+  ShieldCheck,
+  Settings,
 } from 'lucide-react';
-
-const NAV_ITEMS = [
-  {
-    name: 'Dashboard',
-    href: '/admin',
-    icon: LayoutDashboard,
-    badge: null,
-  },
-  {
-    name: 'City Builder',
-    href: '/admin/create-city',
-    icon: MapPin,
-    badge: '4 Cities',
-  },
-  {
-    name: 'Packages',
-    href: '/admin/packages',
-    icon: Package,
-    badge: '5 Tours',
-  },
-  {
-    name: 'Travel Blogs',
-    href: '/admin/blogs',
-    icon: BookOpen,
-    badge: '3 Posts',
-  },
-  {
-    name: 'Customers',
-    href: '/admin/customers',
-    icon: Users,
-    badge: null,
-  },
-  {
-    name: 'Orders',
-    href: '/admin/orders',
-    icon: ShoppingBag,
-    badge: 'Live',
-  },
-];
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { sidebarOpen, toggleSidebar } = useAdmin();
+  const { sidebarOpen } = useAdmin();
+  const { user } = useAuth();
+
+  const { newCount: newEnquiriesCount } = useEnquiries();
+  const { pendingCount: pendingReviewsCount } = useReviews();
+  const { tours } = useTours();
+  const { cities } = useCities();
+
+  const NAV_SECTIONS = [
+    {
+      group: 'OVERVIEW',
+      items: [
+        {
+          name: 'Dashboard',
+          href: '/admin',
+          icon: LayoutDashboard,
+          badge: null,
+        },
+      ],
+    },
+    {
+      group: 'TRAVEL INVENTORY',
+      items: [
+        {
+          name: 'Destinations',
+          href: '/admin/create-city',
+          icon: MapPin,
+          badge: cities?.length ? `${cities.length} Cities` : null,
+        },
+        {
+          name: 'Tour Packages',
+          href: '/admin/packages',
+          icon: Package,
+          badge: tours?.length ? `${tours.length} Tours` : null,
+        },
+        {
+          name: 'Travel Blogs',
+          href: '/admin/blogs',
+          icon: BookOpen,
+          badge: null,
+        },
+      ],
+    },
+    {
+      group: 'GUEST RELATIONS',
+      items: [
+        {
+          name: 'Enquiries / Leads',
+          href: '/admin/enquiries',
+          icon: MessageSquare,
+          badge: newEnquiriesCount > 0 ? `${newEnquiriesCount} New` : null,
+          badgeStyle: 'bg-amber-500 text-slate-950 font-black shadow-xs',
+        },
+        {
+          name: 'Reviews & Ratings',
+          href: '/admin/reviews',
+          icon: Star,
+          badge: pendingReviewsCount > 0 ? `${pendingReviewsCount} Pending` : null,
+          badgeStyle: 'bg-rose-500 text-white font-black shadow-xs',
+        },
+        {
+          name: 'Bookings & Orders',
+          href: '/admin/orders',
+          icon: ShoppingBag,
+          badge: 'Live',
+        },
+        {
+          name: 'Customers',
+          href: '/admin/customers',
+          icon: Users,
+          badge: null,
+        },
+      ],
+    },
+    {
+      group: 'SYSTEM & SETTINGS',
+      items: [
+        {
+          name: 'Team Members',
+          href: '/admin/team',
+          icon: UserCheck,
+          badge: null,
+        },
+        {
+          name: 'Staff & Roles',
+          href: '/admin/users',
+          icon: ShieldCheck,
+          badge: null,
+        },
+        {
+          name: 'General Settings',
+          href: '/admin/settings',
+          icon: Settings,
+          badge: null,
+        },
+      ],
+    },
+  ];
 
   return (
     <aside
-      className={`fixed top-0 left-0 z-30 h-screen bg-[#0f172a] text-slate-200 border-r border-slate-800 transition-all duration-200 ease-in-out flex flex-col ${
+      className={`fixed top-0 left-0 z-30 h-screen bg-[#090e1a] text-slate-200 border-r border-slate-800/80 transition-all duration-300 ease-in-out flex flex-col shadow-2xl ${
         sidebarOpen ? 'w-64' : 'w-20'
       }`}
     >
-      {/* Brand Header with Official Logo & Toggle */}
-      <div className="h-22 flex items-center justify-between px-3 border-b border-slate-800/90 bg-[#0b1120]">
+      {/* Brand Header */}
+      <div className="h-16 flex items-center px-4 border-b border-slate-800/80 bg-[#060a14]">
         {sidebarOpen ? (
-          <>
-            <Link href="/admin" className="flex items-center gap-2 overflow-hidden flex-1 justify-center py-2">
-              <div className="bg-white rounded-xl px-3 py-1.5 shadow-sm flex items-center justify-center">
-                <Logo height={46} />
-              </div>
-            </Link>
-            <button
-              onClick={toggleSidebar}
-              aria-label="Collapse Sidebar"
-              title="Collapse Sidebar"
-              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors shrink-0 cursor-pointer ml-1"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-          </>
+          <Link href="/admin" className="flex items-center gap-3 overflow-hidden flex-1 py-1 group">
+            <div className="bg-white rounded-xl p-1.5 shadow-sm flex items-center justify-center shrink-0 group-hover:ring-2 group-hover:ring-amber-400 transition-all">
+              <Logo height={32} />
+            </div>
+            <div className="min-w-0 flex flex-col">
+              <span className="text-[13px] font-black tracking-tight text-white leading-none">
+                JODHPUR<span className="text-amber-400">VOYAGE</span>
+              </span>
+              <span className="text-[9px] font-semibold text-slate-400 tracking-wider mt-1 uppercase">
+                Travel Central
+              </span>
+            </div>
+          </Link>
         ) : (
-          <button
-            onClick={toggleSidebar}
-            aria-label="Expand Sidebar"
-            title="Click to expand sidebar"
-            className="w-full flex items-center justify-center py-2 group cursor-pointer"
-          >
+          <Link href="/admin" className="w-full flex items-center justify-center py-1 group">
             <div className="bg-white rounded-xl p-1.5 shadow-sm flex items-center justify-center group-hover:ring-2 group-hover:ring-amber-400 transition-all">
-              <Logo height={28} />
+              <Logo height={26} />
             </div>
-          </button>
+          </Link>
         )}
       </div>
 
-      {/* Navigation Links */}
-      <div className="flex-1 py-5 px-3 space-y-1.5 overflow-y-auto">
-        {sidebarOpen && (
-          <div className="px-3 pb-2">
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-              Navigation Menu
-            </p>
-          </div>
-        )}
+      {/* Navigation Menu */}
+      <div className="flex-1 py-4 px-3 space-y-5 overflow-y-auto custom-scrollbar">
+        {NAV_SECTIONS.map((section, idx) => (
+          <div key={idx} className="space-y-1">
+            {sidebarOpen && (
+              <div className="px-3 pb-1">
+                <p className="text-[9px] font-extrabold text-slate-400 uppercase tracking-wider">
+                  {section.group}
+                </p>
+              </div>
+            )}
 
-        {NAV_ITEMS.map((item) => {
-          const Icon = item.icon;
-          const isActive = pathname === item.href;
+            {section.items.map((item) => {
+              const Icon = item.icon;
+              const isActive = pathname === item.href;
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              title={!sidebarOpen ? item.name : undefined}
-              className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs transition-all ${
-                isActive
-                  ? 'bg-amber-500 text-white shadow-sm font-bold'
-                  : 'text-slate-300 hover:bg-slate-800/80 hover:text-white font-medium'
-              }`}
-            >
-              <Icon className={`w-4 h-4 shrink-0 ${isActive ? 'text-white' : 'text-amber-400'}`} />
-              {sidebarOpen && (
-                <div className="flex items-center justify-between flex-1 truncate">
-                  <span className="truncate">{item.name}</span>
-                  {item.badge && (
-                    <span
-                      className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                        isActive
-                          ? 'bg-black/30 text-white'
-                          : 'bg-slate-800 text-amber-300 border border-slate-700'
-                      }`}
-                    >
-                      {item.badge}
-                    </span>
+              return (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  title={!sidebarOpen ? item.name : undefined}
+                  className={`flex items-center gap-3 px-3.5 py-2 rounded-xl text-xs font-semibold transition-all duration-150 ${
+                    isActive
+                      ? 'bg-amber-500 text-slate-950 shadow-sm font-bold'
+                      : 'text-slate-300 hover:bg-slate-800/70 hover:text-white'
+                  }`}
+                >
+                  <Icon
+                    className={`w-4 h-4 shrink-0 transition-transform ${
+                      isActive ? 'text-slate-950 scale-105' : 'text-amber-400/80'
+                    }`}
+                  />
+                  {sidebarOpen && (
+                    <div className="flex items-center justify-between flex-1 truncate">
+                      <span className="truncate">{item.name}</span>
+                      {item.badge && (
+                        <span
+                          className={`text-[9px] px-2 py-0.5 rounded-full leading-none font-bold ${
+                            item.badgeStyle
+                              ? item.badgeStyle
+                              : isActive
+                              ? 'bg-slate-950/20 text-slate-950'
+                              : 'bg-slate-800 text-slate-300 border border-slate-700'
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
                   )}
-                </div>
-              )}
-            </Link>
-          );
-        })}
+                </Link>
+              );
+            })}
+          </div>
+        ))}
       </div>
 
-      {/* Footer Profile & Collapse Toggle */}
-      <div className="p-3 border-t border-slate-800 bg-[#0b1120]">
+      {/* Footer Profile Box without duplicate chevron button */}
+      <div className="p-3 border-t border-slate-800/80 bg-[#060a14]">
         {sidebarOpen ? (
-          <div className="p-2.5 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
-            <div className="flex items-center gap-2 min-w-0">
-              <div className="w-7 h-7 rounded-lg bg-amber-500 text-white font-black flex items-center justify-center text-xs shrink-0 shadow-xs">
-                JV
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-bold text-white truncate">Jodhpur Admin</p>
-                <p className="text-[10px] text-amber-400 font-mono truncate">user1</p>
+          <div className="p-2.5 rounded-xl bg-slate-900/90 border border-slate-800 flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-amber-500 text-slate-950 font-black flex items-center justify-center text-xs shrink-0 shadow-xs">
+              {user?.name ? user.name.slice(0, 2).toUpperCase() : 'JV'}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold text-white truncate">{user?.name || 'Administrator'}</p>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <p className="text-[10px] text-slate-400 truncate">
+                  {user?.email || 'admin@jodhpurvoyage.com'}
+                </p>
               </div>
             </div>
-            <button
-              onClick={toggleSidebar}
-              title="Collapse Sidebar"
-              className="p-1 rounded-md text-slate-400 hover:text-white hover:bg-slate-800 cursor-pointer"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
           </div>
         ) : (
-          <button
-            onClick={toggleSidebar}
-            title="Expand Sidebar"
-            className="w-full flex items-center justify-center py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-amber-400 hover:text-white transition-all cursor-pointer border border-slate-800"
-          >
-            <ChevronRight className="w-4 h-4" />
-          </button>
+          <div className="flex items-center justify-center py-1">
+            <div className="w-8 h-8 rounded-lg bg-slate-900 text-amber-400 font-black flex items-center justify-center text-xs shadow-xs border border-slate-800">
+              {user?.name ? user.name.slice(0, 2).toUpperCase() : 'JV'}
+            </div>
+          </div>
         )}
       </div>
     </aside>
   );
 }
-
 
 export default Sidebar;

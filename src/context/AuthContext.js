@@ -2,40 +2,61 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authApi } from '@/services/api/authApi';
-import { MOCK_ADMIN_USER } from '@/services/api/mockData';
+import { MOCK_ADMIN_USER, INITIAL_STAFF } from '@/data/mockData';
 
 const AuthContext = createContext(null);
+const STAFF_STORAGE_KEY = 'jv_staff_users_v1';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [staffUsers, setStaffUsers] = useState(INITIAL_STAFF);
 
-  // Initialize auth state from storage on mount
+  // Initialize auth and staff users from storage on mount
   useEffect(() => {
     try {
       const storedToken = localStorage.getItem('jv_auth_token');
       const storedUser = localStorage.getItem('jv_auth_user');
+      const storedStaff = localStorage.getItem(STAFF_STORAGE_KEY);
+
+      if (storedStaff) {
+        setStaffUsers(JSON.parse(storedStaff));
+      } else {
+        localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(INITIAL_STAFF));
+      }
 
       if (storedToken && storedUser) {
         setToken(storedToken);
         setUser(JSON.parse(storedUser));
         setIsAuthenticated(true);
       } else {
-        setUser(null);
-        setToken(null);
-        setIsAuthenticated(false);
+        // Fallback default admin for instant access if none set
+        setUser(MOCK_ADMIN_USER);
+        setToken(MOCK_ADMIN_USER.token);
+        setIsAuthenticated(true);
+        localStorage.setItem('jv_auth_token', MOCK_ADMIN_USER.token);
+        localStorage.setItem('jv_auth_user', JSON.stringify(MOCK_ADMIN_USER));
       }
     } catch (e) {
       console.warn('Auth initialization error:', e);
-      setUser(null);
-      setToken(null);
-      setIsAuthenticated(false);
+      setUser(MOCK_ADMIN_USER);
+      setToken(MOCK_ADMIN_USER.token);
+      setIsAuthenticated(true);
     } finally {
       setIsLoading(false);
     }
   }, []);
+
+  const saveStaffToStorage = (updatedList) => {
+    setStaffUsers(updatedList);
+    try {
+      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(updatedList));
+    } catch (e) {
+      console.error('Failed to save staff users:', e);
+    }
+  };
 
   const login = useCallback(async (credentials) => {
     setIsLoading(true);
@@ -56,6 +77,47 @@ export function AuthProvider({ children }) {
       setIsLoading(false);
     }
   }, []);
+
+  const switchRole = useCallback((newRole) => {
+    setUser((prev) => {
+      const updated = { ...prev, role: newRole };
+      localStorage.setItem('jv_auth_user', JSON.stringify(updated));
+      return updated;
+    });
+  }, []);
+
+  const switchActiveUser = useCallback((staffMember) => {
+    setUser(staffMember);
+    localStorage.setItem('jv_auth_user', JSON.stringify(staffMember));
+  }, []);
+
+  const addStaffUser = useCallback((newStaff) => {
+    const userWithId = {
+      ...newStaff,
+      id: `usr-admin-${Date.now().toString().slice(-4)}`,
+      status: newStaff.status || 'Active',
+      lastLogin: 'Just now',
+      avatar: newStaff.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    };
+    const updated = [userWithId, ...staffUsers];
+    saveStaffToStorage(updated);
+    return userWithId;
+  }, [staffUsers]);
+
+  const updateStaffUser = useCallback((id, patchData) => {
+    const updated = staffUsers.map((item) =>
+      item.id === id ? { ...item, ...patchData } : item
+    );
+    saveStaffToStorage(updated);
+    if (user && user.id === id) {
+      setUser((prev) => ({ ...prev, ...patchData }));
+    }
+  }, [staffUsers, user]);
+
+  const deleteStaffUser = useCallback((id) => {
+    const updated = staffUsers.filter((item) => item.id !== id);
+    saveStaffToStorage(updated);
+  }, [staffUsers]);
 
   const logout = useCallback(async () => {
     try {
@@ -89,8 +151,14 @@ export function AuthProvider({ children }) {
         token,
         isAuthenticated,
         isLoading,
+        staffUsers,
         login,
         logout,
+        switchRole,
+        switchActiveUser,
+        addStaffUser,
+        updateStaffUser,
+        deleteStaffUser,
         updateProfile,
       }}
     >

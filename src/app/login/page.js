@@ -13,7 +13,7 @@ export default function LoginPage() {
   const { addToast } = useAdmin();
 
   // Pre-filled credentials
-  const [username, setUsername] = useState('user1');
+  const [username, setUsername] = useState('superadmin');
   const [password, setPassword] = useState('12345');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -139,7 +139,7 @@ export default function LoginPage() {
               required
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="user1"
+              placeholder="superadmin"
               className="w-full bg-[#f8fafc] hover:bg-slate-100/60 focus:bg-white text-slate-900 text-xs sm:text-sm font-medium rounded-xl border border-slate-300/80 px-3.5 py-3 outline-none focus:border-black focus:ring-1 focus:ring-black transition-all"
             />
           </div>
@@ -152,7 +152,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 onClick={() => {
-                  setUsername('user1');
+                  setUsername('superadmin');
                   setPassword('12345');
                 }}
                 className="text-[10px] font-bold text-amber-600 hover:text-amber-800 transition-colors"
@@ -195,7 +195,7 @@ export default function LoginPage() {
         {/* Demo Credentials Footer */}
         <div className="pt-3 border-t border-slate-100 text-center">
           <p className="text-[11px] text-slate-400">
-            Demo Access: <strong className="text-slate-700">user1</strong> / <strong className="text-slate-700">12345</strong>
+            Demo Access: <strong className="text-slate-700">superadmin</strong> / <strong className="text-slate-700">12345</strong>
           </p>
         </div>
       </div>

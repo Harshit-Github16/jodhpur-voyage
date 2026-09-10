@@ -6,7 +6,7 @@ import Sidebar from '@/components/admin/Sidebar';
 import Navbar from '@/components/admin/Navbar';
 import { useAdmin } from '@/context/AdminContext';
 import { useAuth } from '@/context/AuthContext';
-import { Sun } from 'lucide-react';
+import { Sparkles } from 'lucide-react';
 
 export default function AdminLayout({ children }) {
   const router = useRouter();
@@ -22,8 +22,8 @@ export default function AdminLayout({ children }) {
   if (isLoading) {
     return (
       <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center space-y-3">
-        <div className="w-10 h-10 rounded-2xl bg-indigo-600 flex items-center justify-center text-white animate-spin-slow">
-          <Sun className="w-6 h-6" />
+        <div className="w-10 h-10 rounded-xl bg-amber-500 flex items-center justify-center text-slate-950 animate-pulse shadow-md">
+          <Sparkles className="w-5 h-5" />
         </div>
         <p className="text-xs font-semibold text-slate-500">Checking credentials...</p>
       </div>
@@ -35,79 +35,34 @@ export default function AdminLayout({ children }) {
   }
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] flex flex-col relative overflow-x-hidden">
-      {/* 3D Undulating Wireframe Terrain Mesh Background */}
-      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0 flex items-center justify-center">
-        <svg
-          viewBox="0 0 1440 900"
-          fill="none"
-          xmlns="http://www.w3.org/2000/svg"
-          className="w-full h-full object-cover opacity-60"
-          preserveAspectRatio="xMidYMid slice"
-        >
-          <g stroke="#cbd5e1" strokeWidth="0.85" strokeOpacity="0.7">
-            {Array.from({ length: 32 }).map((_, i) => {
-              const yBase = 80 + i * 26;
-              const amp1 = Math.sin(i * 0.35) * 45;
-              const amp2 = Math.cos(i * 0.28) * 35;
-              const d = `M -100 ${yBase} 
-                Q 200 ${yBase - amp1} 450 ${yBase + amp2} 
-                T 950 ${yBase - amp2 * 0.8} 
-                T 1550 ${yBase + amp1 * 0.6}`;
-              return <path key={`h-${i}`} d={d} fill="none" />;
-            })}
-
-            {Array.from({ length: 48 }).map((_, j) => {
-              const xBase = -100 + j * 36;
-              const skew = (j - 24) * 8;
-              const d = `M ${xBase + skew} 0 
-                Q ${xBase + skew * 1.5 + Math.sin(j) * 20} 350 ${xBase + skew * 2.2} 600 
-                T ${xBase + skew * 3.2} 950`;
-              return <path key={`v-${j}`} d={d} fill="none" strokeWidth="0.65" strokeOpacity="0.5" />;
-            })}
-
-            {Array.from({ length: 24 }).map((_, k) => {
-              const startX = -200 + k * 80;
-              return (
-                <line
-                  key={`diag-${k}`}
-                  x1={startX}
-                  y1="0"
-                  x2={startX + 600}
-                  y2="900"
-                  stroke="#e2e8f0"
-                  strokeWidth="0.5"
-                  strokeDasharray="4 4"
-                />
-              );
-            })}
-          </g>
-
-          <path
-            d="M 0 450 Q 360 410 720 460 T 1440 430"
-            stroke="#f59e0b"
-            strokeWidth="1.2"
-            strokeOpacity="0.3"
-            fill="none"
-          />
-        </svg>
+    <div className="h-screen w-screen flex overflow-hidden bg-[#fafaf9] text-slate-800 antialiased selection:bg-amber-500 selection:text-slate-950">
+      {/* Luxury Warm White & Royal Golden Amber Ambient Gradient Background */}
+      <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
+        <div className="absolute -top-32 -right-32 w-[550px] h-[550px] bg-amber-200/30 rounded-full blur-3xl" />
+        <div className="absolute top-1/3 -left-32 w-[600px] h-[600px] bg-amber-100/35 rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 w-[450px] h-[450px] bg-orange-100/25 rounded-full blur-3xl" />
+        <div className="absolute inset-0 bg-linear-to-b from-amber-50/20 via-transparent to-amber-50/10" />
       </div>
 
       {/* Sidebar */}
       <Sidebar />
 
-      {/* Main Admin Area */}
+      {/* Main Admin Area with Permanently Fixed Top Navbar */}
       <div
-        className={`flex-1 flex flex-col transition-all duration-300 ease-in-out relative z-10 ${
+        className={`flex-1 flex flex-col h-screen overflow-hidden transition-all duration-300 ease-in-out relative z-10 ${
           sidebarOpen ? 'md:ml-64' : 'md:ml-20'
         }`}
       >
+        {/* Fixed Header at Top */}
         <Navbar />
-        <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          {children}
+
+        {/* Full-width Scrollable Container (scrollbar positioned at the screen edge, not in the middle) */}
+        <main className="flex-1 overflow-y-auto w-full custom-scrollbar">
+          <div className="max-w-7xl w-full mx-auto p-4 md:p-6 lg:p-7 space-y-6">
+            {children}
+          </div>
         </main>
       </div>
     </div>
   );
 }
-

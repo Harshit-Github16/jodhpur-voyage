@@ -1,21 +1,58 @@
 /**
  * =========================================================================
- * JODHPUR VOYAGE - CENTRAL MOCK DATA REPOSITORY (Frontend Only)
+ * JODHPUR VOYAGE - CENTRAL MOCK DATA REPOSITORY (Full Travel CMS)
  * =========================================================================
- * This single file holds all mock state for the frontend UI.
- * When you provide real backend APIs later, we will simply connect the
- * API client to your backend server without breaking any frontend components.
+ * This file holds all core structured mock state for the frontend & admin panel.
+ * All contexts automatically sync with LocalStorage and fallback to these initial data.
  * =========================================================================
  */
 
-// 1. ADMIN USER
+// 1. ADMIN USER & STAFF USERS
 export const MOCK_ADMIN_USER = {
   id: 'usr-admin-01',
-  name: 'Admin (user1)',
-  email: 'user1@jodhpurvoyage.com',
+  name: 'Harshit sharma (Super Admin)',
+  email: 'admin@jodhpurvoyage.com',
   role: 'Super Admin',
+  phone: '+91 98290 12345',
+  avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
   token: 'mock-jwt-token-jodhpur-voyage-valid',
 };
+
+export const MOCK_STAFF_USERS = [
+  {
+    id: 'usr-admin-01',
+    name: 'Harshit sharma',
+    email: 'admin@jodhpurvoyage.com',
+    role: 'Super Admin',
+    phone: '+91 98290 12345',
+    status: 'Active',
+    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    lastLogin: '2026-09-10 11:45 AM',
+    permissions: ['all'],
+  },
+  {
+    id: 'usr-admin-02',
+    name: 'Vikramaditya Rathore',
+    email: 'vikram@jodhpurvoyage.com',
+    role: 'Admin',
+    phone: '+91 94141 88990',
+    status: 'Active',
+    avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    lastLogin: '2026-09-09 04:20 PM',
+    permissions: ['tours', 'destinations', 'enquiries', 'reviews', 'blogs'],
+  },
+  {
+    id: 'usr-admin-03',
+    name: 'Pooja Choudhary',
+    email: 'pooja@jodhpurvoyage.com',
+    role: 'Editor',
+    phone: '+91 98280 55443',
+    status: 'Active',
+    avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+    lastLogin: '2026-09-08 02:10 PM',
+    permissions: ['blogs', 'reviews', 'team'],
+  },
+];
 
 // 2. CITIES & DESTINATIONS
 export const MOCK_CITIES = [
@@ -26,7 +63,9 @@ export const MOCK_CITIES = [
     slug: 'jodhpur',
     tagline: 'The Legendary Sun City & Blue Heritage Capital',
     heroTitle: 'Discover Royal Jodhpur: Forts, Palaces & Desert Safaris',
+    metaTitle: 'Jodhpur Tour Packages & Blue City Sightseeing | Jodhpur Voyage',
     metaDescription: 'Explore the majestic Mehrangarh Fort, blue city walking trails, Umaid Bhawan palace, and authentic Thar desert camel safaris with Jodhpur Voyage.',
+    keywords: 'jodhpur tours, blue city walk, mehrangarh fort tour, osian desert safari, jodhpur travel guide',
     bannerImage: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=1200&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
@@ -51,7 +90,9 @@ export const MOCK_CITIES = [
     slug: 'jaipur',
     tagline: 'The Pink City of Royal Fortresses & Bazaars',
     heroTitle: 'Experience Jaipur: Amber Fort, Hawa Mahal & Royal Heritage',
+    metaTitle: 'Jaipur Heritage Tours & Fort Sightseeing Packages | Jodhpur Voyage',
     metaDescription: 'Immerse yourself in Rajasthan’s capital with Amber Fort elephant trails, City Palace tours, and vibrant gem bazaars.',
+    keywords: 'jaipur tours, amber fort, hawa mahal, pink city tour, rajasthan heritage packages',
     bannerImage: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=1200&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=800&q=80',
@@ -73,7 +114,9 @@ export const MOCK_CITIES = [
     slug: 'udaipur',
     tagline: 'City of Lakes & Romantic Palaces',
     heroTitle: 'Explore Udaipur: Lake Pichola Boat Cruises & Royal Splendor',
+    metaTitle: 'Udaipur Tour Packages & Lake Pichola Luxury Cruises | Jodhpur Voyage',
     metaDescription: 'Experience serene boat rides on Lake Pichola, Grand City Palace, and Jag Mandir island retreats.',
+    keywords: 'udaipur tour packages, lake pichola boat cruise, city palace udaipur, romantic rajasthan tours',
     bannerImage: 'https://images.unsplash.com/photo-1615836245337-f5b9b2303f10?auto=format&fit=crop&w=1200&q=80',
     gallery: [
       'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
@@ -94,29 +137,36 @@ export const MOCK_CITIES = [
     slug: 'jaisalmer',
     tagline: 'The Golden City & Sam Sand Dunes Haven',
     heroTitle: 'Adventure in Jaisalmer: Living Golden Fort & Starlit Desert Camps',
+    metaTitle: 'Jaisalmer Desert Safari & Golden Fort Packages | Jodhpur Voyage',
     metaDescription: 'Camp under the stars in the Thar desert, explore Jaisalmer Fort, and ride camels over golden sand dunes.',
+    keywords: 'jaisalmer desert safari, sam sand dunes, golden fort jaisalmer, thar desert camp',
     bannerImage: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=1200&q=80',
-    gallery: [],
+    gallery: [
+      'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
+    ],
     highlights: ['Jaisalmer Golden Fort', 'Sam Sand Dunes Luxury Camp', 'Patwon Ki Haveli', 'Gadisar Lake'],
     faqs: [
       { question: 'Are desert tents AC or luxury?', answer: 'We offer Swiss luxury Swiss tents with attached modern bathrooms and cultural folk shows.' }
     ],
     packagesCount: 2,
-    status: 'Draft',
-    featured: false,
+    status: 'Published',
+    featured: true,
     createdAt: '2025-01-15T09:00:00Z',
   },
 ];
 
-// 3. PACKAGES / TOURS
+// 3. PACKAGES / TOURS WITH DAY-BY-DAY ITINERARY & PDF LINK
 export const MOCK_PACKAGES = [
   {
     id: 'pkg-101',
     cityId: 'city-jodhpur',
     cityName: 'Jodhpur',
     title: 'Mehrangarh Fort & Jaswant Thada Heritage Walk',
+    slug: 'mehrangarh-fort-jaswant-thada-heritage-walk',
     category: 'Heritage & History',
+    categoryTag: 'Rajasthan Tour',
     duration: '4 Hours',
+    durationDays: 'Half Day',
     price: 1499,
     originalPrice: 1999,
     maxGroupSize: 15,
@@ -125,17 +175,38 @@ export const MOCK_PACKAGES = [
     status: 'Active',
     featured: true,
     location: 'Fort Road, Jodhpur',
-    description: 'Explore the majestic 15th-century Mehrangarh Fort with private audio guides, museum exhibits, and white marble cenotaph of Jaswant Thada.',
-    inclusions: ['Fort Entry Ticket', 'Licensed Guide', 'Mineral Water', 'Jaswant Thada Entry'],
+    description: 'Explore the majestic 15th-century Mehrangarh Fort with private audio guides, museum exhibits, and the white marble cenotaph of Jaswant Thada.',
+    inclusions: ['Fort Entry Ticket', 'Licensed Historian Guide', 'Mineral Water & Refreshments', 'Jaswant Thada Entry'],
+    exclusions: ['Camera fees if applicable', 'Hotel pick up & drop off', 'Gratuities for guide'],
+    pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    gallery: [
+      'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
+    ],
     image: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=800&q=80',
+    itinerary: [
+      {
+        day: 1,
+        title: 'Mehrangarh Palace, Museum & Jaswant Thada Cenotaphs',
+        description: 'Meet guide at Fateh Pol gate. Tour the royal palanquin gallery, Sheesh Mahal, Phool Mahal, and walk to Jaswant Thada marble royal memorial.',
+        highlights: 'Fateh Pol, Sheesh Mahal, Daulat Khana Museum, Jaswant Thada view',
+      },
+    ],
+    seo: {
+      metaTitle: 'Mehrangarh Fort Guided Tour Jodhpur | Jodhpur Voyage',
+      metaDescription: 'Book official guided heritage walk of Mehrangarh Fort and Jaswant Thada with certified historians in Jodhpur.',
+    },
   },
   {
     id: 'pkg-102',
     cityId: 'city-jodhpur',
     cityName: 'Jodhpur',
     title: 'Blue City Alleys & Stepwell Sunset Photography Walk',
+    slug: 'blue-city-alleys-stepwell-sunset-photography-walk',
     category: 'Walking Tours',
+    categoryTag: 'Rajasthan Tour',
     duration: '3 Hours',
+    durationDays: 'Half Day',
     price: 899,
     originalPrice: 1200,
     maxGroupSize: 10,
@@ -144,17 +215,37 @@ export const MOCK_PACKAGES = [
     status: 'Active',
     featured: true,
     location: 'Navchokiya & Toorji Ka Jhalra',
-    description: 'Immerse in the indigo Brahmin quarters of Navchokiya, taste royal masala chai, and photograph Toorji Ka Jhalra stepwell at sunset.',
-    inclusions: ['Local Guide', 'Chai & Snacks', 'Photo guidance'],
+    description: 'Immerse in the indigo Brahmin quarters of Navchokiya, taste royal masala chai, and photograph Toorji Ka Jhalra stepwell at golden hour.',
+    inclusions: ['Local Guide & Storyteller', 'Royal Masala Chai & Local Snacks', 'Best Photography Spots Guidance'],
+    exclusions: ['Camera equipment', 'Personal purchases'],
+    pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    gallery: [
+      'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
+    ],
     image: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
+    itinerary: [
+      {
+        day: 1,
+        title: 'Navchokiya Blue Streets & Toorji Ka Jhalra Sunset',
+        description: 'Guided walking tour through medieval indigo-dyed lanes, interacting with artisans, visiting ancient temples, and ending at the stepwell cafe.',
+        highlights: 'Indigo blue homes, Toorji Ka Jhalra stepwell, Pachetia hill viewpoint',
+      },
+    ],
+    seo: {
+      metaTitle: 'Blue City Jodhpur Photography Walk & Stepwell Tour',
+      metaDescription: 'Walk the hidden blue alleys of Navchokiya and Toorji Ka Jhalra stepwell with a local photographer.',
+    },
   },
   {
     id: 'pkg-103',
     cityId: 'city-jodhpur',
     cityName: 'Jodhpur',
     title: 'Osian Desert Dunes Sunset Camel Safari & Folk Dinner',
+    slug: 'osian-desert-dunes-sunset-camel-safari-folk-dinner',
     category: 'Desert Safari',
-    duration: '7 Hours',
+    categoryTag: 'Desert Safari',
+    duration: '1 Day / 1 Night',
+    durationDays: '1 Day / 1 Night',
     price: 3499,
     originalPrice: 4200,
     maxGroupSize: 20,
@@ -162,37 +253,96 @@ export const MOCK_PACKAGES = [
     reviewsCount: 210,
     status: 'Active',
     featured: true,
-    location: 'Osian Dunes',
-    description: '8th-century temple visits, 4x4 dune bashing, camel safari at sunset, and Rajasthani Kalbeliya folk dance around bonfire with dinner.',
-    inclusions: ['AC Transport', 'Camel Safari', 'Buffet Dinner', 'Cultural Folk Show'],
+    location: 'Osian Thar Desert Dunes',
+    description: '8th-century temple visits, 4x4 dune bashing, camel safari at sunset, and Rajasthani Kalbeliya folk dance around bonfire with gala dinner.',
+    inclusions: ['AC Transport from Jodhpur', 'Sunset Camel Safari', 'Traditional Buffet Dinner', 'Kalbeliya Folk Music & Dance Show'],
+    exclusions: ['Alcoholic drinks', 'Quad biking (optional add-on)'],
+    pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    gallery: [
+      'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
+      'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80',
+    ],
     image: 'https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?auto=format&fit=crop&w=800&q=80',
+    itinerary: [
+      {
+        day: 1,
+        title: 'Jodhpur to Osian Oasis & Sunset Camel Safari',
+        description: 'Afternoon pick-up from Jodhpur. Visit Sachiya Mata Temple, followed by thrilling camel ride over golden dunes to witness sunset.',
+        highlights: 'Sachiya Mata Temple, Sunset camel trek, Dune photography',
+      },
+      {
+        day: 2,
+        title: 'Camp Bonfire, Cultural Dance & Return to Jodhpur',
+        description: 'Rajasthani folk music, Kalbeliya dance performance, Dal Baati Churma dinner around bonfire, and comfortable drive back.',
+        highlights: 'Bonfire cultural show, Royal Rajasthani dinner, Desert stargazing',
+      },
+    ],
+    seo: {
+      metaTitle: 'Osian Desert Safari & Camel Trek Jodhpur | Jodhpur Voyage',
+      metaDescription: 'Authentic Osian desert camel safari, 4x4 dune bashing and folk musical dinner near Jodhpur.',
+    },
   },
   {
     id: 'pkg-104',
     cityId: 'city-jaipur',
     cityName: 'Jaipur',
-    title: 'Amber Fort Royal Heritage & Sheesh Mahal Tour',
+    title: '3-Day Golden Triangle Royal Fortresses & Palaces Tour',
+    slug: '3-day-golden-triangle-royal-fortresses-palaces-tour',
     category: 'Heritage & History',
-    duration: '5 Hours',
-    price: 1899,
-    originalPrice: 2400,
-    maxGroupSize: 15,
-    rating: 4.85,
-    reviewsCount: 142,
+    categoryTag: 'Golden Triangle',
+    duration: '3 Days / 2 Nights',
+    durationDays: '3 Days / 2 Nights',
+    price: 12499,
+    originalPrice: 15999,
+    maxGroupSize: 12,
+    rating: 4.9,
+    reviewsCount: 88,
     status: 'Active',
     featured: true,
-    location: 'Amer, Jaipur',
-    description: 'Grand Amer fort exploration, Mirror Palace (Sheesh Mahal), Panna Meena Ka Kund stepwell, and royal elephant court visit.',
-    inclusions: ['Amer Fort Tickets', 'Historian Guide', 'AC Cab from Hotel'],
-    image: 'https://images.unsplash.com/photo-1603289984181-98754b281b3a?auto=format&fit=crop&w=800&q=80',
+    location: 'Jaipur & Amer',
+    description: 'A complete luxury discovery of Jaipur including Amber Fort, Hawa Mahal, City Palace, Nahargarh sunset, and local craft shopping.',
+    inclusions: ['2 Nights 4-Star Heritage Hotel Stay', 'Daily Breakfast & Dinner', 'Private AC Cab & Driver', 'Monument Entry Tickets & Historian Guide'],
+    exclusions: ['Airfare / Train tickets', 'Personal laundry & telephone expenses'],
+    pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    gallery: [
+      'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=800&q=80',
+    ],
+    image: 'https://images.unsplash.com/photo-1599661046289-e31897846e41?auto=format&fit=crop&w=800&q=80',
+    itinerary: [
+      {
+        day: 1,
+        title: 'Arrival in Pink City & Hawa Mahal Sunset',
+        description: 'Check-in to heritage Haveli hotel. Afternoon visit to City Palace, Jantar Mantar, and photography stop at Hawa Mahal.',
+        highlights: 'Hawa Mahal, City Palace, Johari Bazaar walk',
+      },
+      {
+        day: 2,
+        title: 'Amer Fort, Sheesh Mahal & Nahargarh Sunset',
+        description: 'Ascend Amer Fort, marvel at Mirror Palace, visit Panna Meena Stepwell, and watch city sunset from Nahargarh fort edge.',
+        highlights: 'Amber Fort, Sheesh Mahal, Panna Meena Kund, Nahargarh Fort',
+      },
+      {
+        day: 3,
+        title: 'Jal Mahal, Albert Hall & Departure',
+        description: 'Morning photo visit to Jal Mahal water palace, Albert Hall Museum, handicraft souvenir tour and airport transfer.',
+        highlights: 'Jal Mahal, Albert Hall museum, Departure',
+      },
+    ],
+    seo: {
+      metaTitle: '3 Days Jaipur Tour Package & Royal Palaces Itinerary',
+      metaDescription: 'All-inclusive 3 Days / 2 Nights Jaipur royal heritage holiday with luxury accommodation and private guide.',
+    },
   },
   {
     id: 'pkg-105',
     cityId: 'city-udaipur',
     cityName: 'Udaipur',
     title: 'Lake Pichola Sunset Luxury Cruise & Jag Mandir Island',
+    slug: 'lake-pichola-sunset-luxury-cruise-jag-mandir',
     category: 'Luxury & Royal',
+    categoryTag: 'Rajasthan Tour',
     duration: '3 Hours',
+    durationDays: 'Half Day',
     price: 2499,
     originalPrice: 3200,
     maxGroupSize: 12,
@@ -202,8 +352,25 @@ export const MOCK_PACKAGES = [
     featured: true,
     location: 'Lake Pichola, Udaipur',
     description: 'Private chartered boat cruise on Lake Pichola, panoramic views of City Palace, Jag Mandir island palace, and royal high tea.',
-    inclusions: ['Boat Cruise Ticket', 'Jag Mandir Entry', 'High Tea & Snacks'],
+    inclusions: ['Chartered Boat Cruise Ticket', 'Jag Mandir Island Entry', 'Royal High Tea & Sweets', 'Safety Lifejackets'],
+    exclusions: ['Dinner at Jag Mandir (optional)', 'Hotel transfers'],
+    pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+    gallery: [
+      'https://images.unsplash.com/photo-1615836245337-f5b9b2303f10?auto=format&fit=crop&w=800&q=80',
+    ],
     image: 'https://images.unsplash.com/photo-1615836245337-f5b9b2303f10?auto=format&fit=crop&w=800&q=80',
+    itinerary: [
+      {
+        day: 1,
+        title: 'Sunset Pichola Cruise & Jag Mandir High Tea',
+        description: 'Board luxury boat from Rameshwar Ghat, glide past City Palace and Lake Palace, stop at Jag Mandir courtyard for high tea.',
+        highlights: 'Lake Pichola, City Palace water front, Jag Mandir Palace',
+      },
+    ],
+    seo: {
+      metaTitle: 'Lake Pichola Sunset Boat Cruise Udaipur | Jodhpur Voyage',
+      metaDescription: 'Experience royal luxury sunset boat cruise on Lake Pichola with Jag Mandir island palace visit.',
+    },
   },
 ];
 
@@ -225,7 +392,7 @@ Built in the 1740s by Queen Consort of Maharaja Abhay Singh, this 200-foot deep 
 
 ### 3. Pachetia Hill Viewpoint
 Climb the stone stairs behind the old quarters for an unparalleled 360-degree panorama of the blue town beneath the towering cliffs of Mehrangarh Fort.`,
-    author: 'Harshit Panigrahi',
+    author: 'Harshit sharma',
     authorRole: 'Chief Travel Curator',
     authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
     coverImage: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=1000&q=80',
@@ -235,6 +402,10 @@ Climb the stone stairs behind the old quarters for an unparalleled 360-degree pa
     status: 'Published',
     featured: true,
     publishedAt: '2026-09-02T10:00:00Z',
+    seo: {
+      metaTitle: '7 Best Hidden Blue City Photography Spots in Jodhpur',
+      metaDescription: 'Discover secret photogenic blue alleys, stepwells, and sunrise spots in Navchokiya Jodhpur with our insider travel guide.',
+    },
   },
   {
     id: 'blog-102',
@@ -261,6 +432,10 @@ Osian offers a far more pristine, peaceful desert environment with undisturbed s
     status: 'Published',
     featured: true,
     publishedAt: '2026-09-05T14:30:00Z',
+    seo: {
+      metaTitle: 'Osian Desert Safari Complete Guide 2026 | Jodhpur Voyage',
+      metaDescription: 'Everything you need to know about planning a desert camping and camel safari trip to Osian near Jodhpur.',
+    },
   },
   {
     id: 'blog-103',
@@ -288,10 +463,271 @@ A dessert unique to Jodhpur, crisp puffed pastries stuffed with sweetened mawa, 
     status: 'Published',
     featured: false,
     publishedAt: '2026-09-07T09:15:00Z',
+    seo: {
+      metaTitle: 'Jodhpur Street Food Guide - Best Mirchi Vada & Lassi',
+      metaDescription: 'Explore the best street food spots in Jodhpur from Clock Tower Pyaaz Kachori to Makhaniya Lassi.',
+    },
   },
 ];
 
-// 5. CUSTOMERS
+// 5. ENQUIRIES & CONTACT FORM SUBMISSIONS (LEADS)
+export const MOCK_ENQUIRIES = [
+  {
+    id: 'ENQ-901',
+    name: 'Rajesh Singhania',
+    email: 'rajesh.singhania@techcorp.in',
+    phone: '+91 98112 34567',
+    destination: 'Jodhpur',
+    packageInterest: 'Mehrangarh Fort & Jaswant Thada Heritage Walk',
+    travelers: 4,
+    preferredDate: '2026-09-22',
+    budget: '₹20,000 - ₹35,000',
+    message: 'We are a family of 4 visiting Jodhpur for 3 days. We want a private historian guide for Mehrangarh Fort and an evening camel safari in Osian.',
+    status: 'New', // New, Contacted, Converted, Closed
+    notes: 'Called on 10 Sep - interested in VIP package with luxury AC Innova.',
+    source: 'Contact Form',
+    createdAt: '2026-09-10T09:30:00Z',
+  },
+  {
+    id: 'ENQ-902',
+    name: 'Chloe Laurent',
+    email: 'chloe.laurent@parisvoyages.fr',
+    phone: '+33 6 12 34 56 78',
+    destination: 'Jodhpur & Jaisalmer',
+    packageInterest: 'Osian Desert Dunes Sunset Camel Safari & Folk Dinner',
+    travelers: 2,
+    preferredDate: '2026-10-05',
+    budget: '€600 - €900',
+    message: 'Hello, looking for private desert camping with traditional folk music and stargazing for our anniversary trip.',
+    status: 'Contacted',
+    notes: 'Sent WhatsApp itinerary PDF and brochure.',
+    source: 'Package Page Inquiry',
+    createdAt: '2026-09-09T14:15:00Z',
+  },
+  {
+    id: 'ENQ-903',
+    name: 'Ananya Deshmukh',
+    email: 'ananya.deshmukh@gmail.com',
+    phone: '+91 97654 32109',
+    destination: 'Jaipur',
+    packageInterest: '3-Day Golden Triangle Royal Fortresses & Palaces Tour',
+    travelers: 6,
+    preferredDate: '2026-09-28',
+    budget: '₹80,000+',
+    message: 'Corporate retreat for 6 senior executives. Need luxury stay, heritage dinner at Amer, and comfortable coach.',
+    status: 'Converted',
+    notes: 'Booking confirmed! Deposit received via UPI (ORD-2026-904).',
+    source: 'Custom Tour Form',
+    createdAt: '2026-09-08T11:00:00Z',
+  },
+  {
+    id: 'ENQ-904',
+    name: 'David Miller',
+    email: 'david.miller@globetrotter.us',
+    phone: '+1 415 555 0192',
+    destination: 'Udaipur',
+    packageInterest: 'Lake Pichola Sunset Luxury Cruise & Jag Mandir Island',
+    travelers: 2,
+    preferredDate: '2026-10-12',
+    budget: '$500',
+    message: 'Want to book private sunset boat on Lake Pichola with dinner at Jag Mandir palace restaurant.',
+    status: 'New',
+    notes: '',
+    source: 'Quick Inquiry Popup',
+    createdAt: '2026-09-10T10:45:00Z',
+  },
+  {
+    id: 'ENQ-905',
+    name: 'Sunil Verma',
+    email: 'sunil.verma@delhicapital.com',
+    phone: '+91 98100 87654',
+    destination: 'Jodhpur',
+    packageInterest: 'Blue City Alleys & Stepwell Sunset Photography Walk',
+    travelers: 1,
+    preferredDate: '2026-09-15',
+    budget: '₹3,000',
+    message: 'Looking for a solo photography walk early morning at 6:30 AM in Navchokiya.',
+    status: 'Closed',
+    notes: 'Tour completed satisfactorily.',
+    source: 'Contact Form',
+    createdAt: '2026-09-06T16:20:00Z',
+  },
+];
+
+// 6. CUSTOMER REVIEWS & TESTIMONIALS
+export const MOCK_REVIEWS = [
+  {
+    id: 'rev-101',
+    customerName: 'Aarav Sharma',
+    customerLocation: 'Mumbai, India',
+    customerAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
+    packageTitle: 'Mehrangarh Fort & Jaswant Thada Heritage Walk',
+    rating: 5,
+    title: 'The Best Historical Walk We Ever Had in Rajasthan!',
+    comment: 'Harshit and his team made the history of Mehrangarh come alive! The skip-the-line access and secret royal vantage points were incredible. Highly recommended for every family visiting Jodhpur.',
+    tourDate: 'September 2026',
+    status: 'Approved',
+    featured: true,
+    createdAt: '2026-09-08T12:00:00Z',
+  },
+  {
+    id: 'rev-102',
+    customerName: 'Elena Rostova',
+    customerLocation: 'London, UK',
+    customerAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=150&q=80',
+    packageTitle: 'Osian Desert Dunes Sunset Camel Safari & Folk Dinner',
+    rating: 5,
+    title: 'Magical Desert Sunset & Authentic Kalbeliya Folk Show',
+    comment: 'The dunes at Osian were serene without the crowded tourist traps. Stargazing around the campfire with hot Dal Baati was unforgettable. Our driver was extremely polite and punctual.',
+    tourDate: 'September 2026',
+    status: 'Approved',
+    featured: true,
+    createdAt: '2026-09-07T15:30:00Z',
+  },
+  {
+    id: 'rev-103',
+    customerName: 'Liam & Sophie Becker',
+    customerLocation: 'Munich, Germany',
+    customerAvatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=150&q=80',
+    packageTitle: 'Blue City Alleys & Stepwell Sunset Photography Walk',
+    rating: 5,
+    title: 'Photographer’s Dream Experience',
+    comment: 'Navchokiya’s blue houses are breathtaking. Our guide knew all the welcoming local families and best rooftop views of the fort. Savoring hot masala chai at Toorji Ka Jhalra was pure bliss.',
+    tourDate: 'September 2026',
+    status: 'Approved',
+    featured: true,
+    createdAt: '2026-09-06T18:20:00Z',
+  },
+  {
+    id: 'rev-104',
+    customerName: 'Kavita Iyer',
+    customerLocation: 'Bengaluru, India',
+    customerAvatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=150&q=80',
+    packageTitle: 'Lake Pichola Sunset Luxury Cruise & Jag Mandir Island',
+    rating: 4,
+    title: 'Great experience on Lake Pichola',
+    comment: 'The boat ride was majestic during sunset. The high tea at Jag Mandir was very pleasant. Everything was on time.',
+    tourDate: 'August 2026',
+    status: 'Pending',
+    featured: false,
+    createdAt: '2026-09-09T08:10:00Z',
+  },
+  {
+    id: 'rev-105',
+    customerName: 'Rohan Mehta',
+    customerLocation: 'Ahmedabad, India',
+    customerAvatar: '',
+    packageTitle: 'Mehrangarh Fort & Jaswant Thada Heritage Walk',
+    rating: 5,
+    title: 'Very knowledgeable guides and royal treatment',
+    comment: 'Courteous staff, well managed itinerary. The private audio headsets provided were very clear.',
+    tourDate: 'September 2026',
+    status: 'Pending',
+    featured: false,
+    createdAt: '2026-09-10T07:45:00Z',
+  },
+];
+
+// 7. TEAM MEMBERS
+export const MOCK_TEAM = [
+  {
+    id: 'team-01',
+    name: 'Harshit sharma',
+    role: 'Founder & Chief Tour Curator',
+    bio: 'Born in Jodhpur, Harshit has spent over 12 years curating authentic royal Marwari heritage walks and luxury Thar expeditions for international travelers.',
+    photo: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=600&q=80',
+    email: 'harshit@jodhpurvoyage.com',
+    phone: '+91 98290 12345',
+    whatsapp: '+919829012345',
+    linkedin: 'https://linkedin.com/in/harshit-jodhpurvoyage',
+    instagram: 'https://instagram.com/jodhpurvoyage',
+    order: 1,
+    status: 'Active',
+  },
+  {
+    id: 'team-02',
+    name: 'Vikramaditya Rathore',
+    role: 'Head of Desert Safaris & Logistics',
+    bio: 'An Osian native and 4x4 off-road specialist, Vikram ensures seamless desert camping, camel safaris, and safe luxury glamping experiences.',
+    photo: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=600&q=80',
+    email: 'vikram@jodhpurvoyage.com',
+    phone: '+91 94141 88990',
+    whatsapp: '+919414188990',
+    linkedin: 'https://linkedin.com',
+    instagram: 'https://instagram.com',
+    order: 2,
+    status: 'Active',
+  },
+  {
+    id: 'team-03',
+    name: 'Pooja Choudhary',
+    role: 'Cultural Historian & Culinary Guide',
+    bio: 'Specialist in Rajputana architectural history and Marwari street gastronomy. Pooja leads our signature Blue City walking tours and food trails.',
+    photo: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=600&q=80',
+    email: 'pooja@jodhpurvoyage.com',
+    phone: '+91 98280 55443',
+    whatsapp: '+919828055443',
+    linkedin: 'https://linkedin.com',
+    instagram: 'https://instagram.com',
+    order: 3,
+    status: 'Active',
+  },
+  {
+    id: 'team-04',
+    name: 'Rajendra Singh Bhati',
+    role: 'Senior Guest Experience Manager',
+    bio: 'Dedicated to 24/7 guest concierge, luxury hotel reservations, and customized Golden Triangle bespoke itinerary arrangements.',
+    photo: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=600&q=80',
+    email: 'rajendra@jodhpurvoyage.com',
+    phone: '+91 94140 11223',
+    whatsapp: '+919414011223',
+    linkedin: 'https://linkedin.com',
+    instagram: '',
+    order: 4,
+    status: 'Active',
+  },
+];
+
+// 8. GENERAL SETTINGS
+export const MOCK_SETTINGS = {
+  siteTitle: 'Jodhpur Voyage — Royal Rajasthan Tours & Desert Safaris',
+  tagline: 'Experience Royal Forts, Blue City Heritage & Starlit Thar Dunes',
+  logoUrl: '/logo.png',
+  faviconUrl: '/favicon.ico',
+  primaryColor: '#f59e0b',
+  phone: '+91 98290 12345',
+  altPhone: '+91 94141 88990',
+  email: 'contact@jodhpurvoyage.com',
+  supportEmail: 'bookings@jodhpurvoyage.com',
+  whatsappNumber: '919829012345',
+  address: 'Heritage House, Near Clock Tower & Toorji Stepwell, Jodhpur, Rajasthan 342001, India',
+  googleMapsUrl: 'https://maps.google.com/?q=Toorji+Ka+Jhalra+Jodhpur',
+  social: {
+    instagram: 'https://instagram.com/jodhpurvoyage',
+    facebook: 'https://facebook.com/jodhpurvoyage',
+    youtube: 'https://youtube.com/@jodhpurvoyage',
+    tripadvisor: 'https://tripadvisor.com/jodhpurvoyage',
+    twitter: 'https://twitter.com/jodhpurvoyage',
+  },
+  header: {
+    announcementText: '🌟 Festive Winter Offer: Get Flat 15% Off on All Osian Desert Safaris & Blue City Walks! Use Code: ROYAL15',
+    announcementActive: true,
+    ctaButtonText: 'Book Royal Tour',
+    ctaButtonUrl: '/admin/packages',
+  },
+  footer: {
+    aboutText: 'Jodhpur Voyage is Rajasthan’s premier luxury experiential travel company. We curate bespoke fort explorations, blue city photography walks, and starlit desert camping across Jodhpur, Jaipur, Udaipur, and Jaisalmer.',
+    copyrightText: '© 2026 Jodhpur Voyage. All rights reserved. Registered with Department of Tourism, Govt of Rajasthan.',
+  },
+  booking: {
+    currencySymbol: '₹',
+    currencyCode: 'INR',
+    taxRatePercentage: 5,
+    autoConfirmBookings: true,
+  },
+};
+
+// 9. CUSTOMERS
 export const MOCK_CUSTOMERS = [
   {
     id: 'cust-101',
@@ -367,7 +803,7 @@ export const MOCK_CUSTOMERS = [
   },
 ];
 
-// 6. ORDERS & RESERVATIONS
+// 10. ORDERS & RESERVATIONS
 export const MOCK_ORDERS = [
   {
     id: 'ORD-2026-901',
@@ -426,11 +862,11 @@ export const MOCK_ORDERS = [
     customerEmail: 'sophie.becker@outlook.de',
     customerPhone: '+49 151 2345678',
     cityName: 'Jaipur',
-    packageTitle: 'Amber Fort Royal Heritage & Sheesh Mahal Tour',
-    tourTitle: 'Amber Fort Royal Heritage & Sheesh Mahal Tour',
+    packageTitle: '3-Day Golden Triangle Royal Fortresses & Palaces Tour',
+    tourTitle: '3-Day Golden Triangle Royal Fortresses & Palaces Tour',
     travelers: 2,
     tourDate: '2026-09-18',
-    totalAmount: 3798,
+    totalAmount: 24998,
     paymentStatus: 'Paid',
     paymentMethod: 'PayPal',
     orderStatus: 'Confirmed',
@@ -464,3 +900,8 @@ export const INITIAL_BLOGS = MOCK_BLOGS;
 export const INITIAL_CUSTOMERS = MOCK_CUSTOMERS;
 export const INITIAL_ORDERS = MOCK_ORDERS;
 export const INITIAL_BOOKINGS = MOCK_ORDERS;
+export const INITIAL_ENQUIRIES = MOCK_ENQUIRIES;
+export const INITIAL_REVIEWS = MOCK_REVIEWS;
+export const INITIAL_TEAM = MOCK_TEAM;
+export const INITIAL_SETTINGS = MOCK_SETTINGS;
+export const INITIAL_STAFF = MOCK_STAFF_USERS;

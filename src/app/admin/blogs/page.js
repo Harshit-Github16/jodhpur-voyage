@@ -61,7 +61,7 @@ export default function BlogsManagementPage() {
       category: 'Travel Guide',
       excerpt: '',
       content: '',
-      author: 'Admin (user1)',
+      author: 'Admin (superadmin)',
       authorRole: 'Travel Guide & Editor',
       coverImage: 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=1000&q=80',
       readTime: '5 min read',
@@ -154,11 +154,10 @@ export default function BlogsManagementPage() {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors ${
-                  selectedCategory === cat
+                className={`px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors ${selectedCategory === cat
                     ? 'bg-[#0f172a] text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                }`}
+                  }`}
               >
                 {cat}
               </button>
@@ -207,11 +206,10 @@ export default function BlogsManagementPage() {
 
                 <div className="absolute top-3 right-3">
                   <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${
-                      blog.status === 'Published'
+                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${blog.status === 'Published'
                         ? 'bg-emerald-100 text-emerald-800'
                         : 'bg-slate-100 text-slate-700'
-                    }`}
+                      }`}
                   >
                     {blog.status}
                   </span>
@@ -447,6 +445,33 @@ export default function BlogsManagementPage() {
                   placeholder="BlueCity, Photography, Heritage, Rajasthan"
                   className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
                 />
+              </div>
+
+              <div className="grid grid-cols-1 gap-3 pt-2 border-t border-slate-200">
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
+                    SEO Meta Title
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.metaTitle || ''}
+                    onChange={(e) => setFormData({ ...formData, metaTitle: e.target.value })}
+                    placeholder="e.g. 7 Best Hidden Blue City Photography Spots in Jodhpur"
+                    className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
+                    SEO Meta Description
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={formData.metaDescription || ''}
+                    onChange={(e) => setFormData({ ...formData, metaDescription: e.target.value })}
+                    placeholder="Meta description for search engines..."
+                    className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
+                  />
+                </div>
               </div>
 
               <div className="flex items-center gap-6 pt-2 border-t border-slate-200">

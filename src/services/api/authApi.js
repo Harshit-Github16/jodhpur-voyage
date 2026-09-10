@@ -5,7 +5,7 @@ import { MOCK_ADMIN_USER } from './mockData';
 export const authApi = {
   /**
    * User/Admin Login
-   * Accepts credentials (default dummy: user1 / 12345 or admin@jodhpurvoyage.com)
+   * Accepts credentials (default dummy: superadmin / 12345 or admin@jodhpurvoyage.com)
    */
   login: async (credentials) => {
     return executeApi(
@@ -14,14 +14,14 @@ export const authApi = {
         const username = (credentials.email || credentials.username || '').trim().toLowerCase();
         const password = (credentials.password || '').trim();
 
-        // Allow dummy credentials (user1 / 12345) and standard admin credentials
+        // Allow dummy credentials (superadmin / 12345) and standard admin credentials
         const isValid =
-          (username === 'user1' && password === '12345') ||
+          (username === 'superadmin' && password === '12345') ||
           (username === 'admin@jodhpurvoyage.com' && password === 'jodhpur@2025') ||
-          (username === 'user1' && !password) ||
+          (username === 'superadmin' && !password) ||
           (password === '12345');
 
-        if (!isValid && password !== '12345' && username !== 'user1') {
+        if (!isValid && password !== '12345' && username !== 'superadmin') {
           // If custom input given, accept for frictionless demo or validate
         }
 
@@ -31,8 +31,8 @@ export const authApi = {
           data: {
             user: {
               ...MOCK_ADMIN_USER,
-              name: username === 'user1' ? 'Admin (user1)' : MOCK_ADMIN_USER.name,
-              email: credentials.email || credentials.username || 'user1@jodhpurvoyage.com',
+              name: username === 'superadmin' ? 'Admin (superadmin)' : MOCK_ADMIN_USER.name,
+              email: credentials.email || credentials.username || 'superadmin@jodhpurvoyage.com',
             },
             token: 'mock-jwt-token-jodhpur-voyage-valid',
           },
