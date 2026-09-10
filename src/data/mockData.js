@@ -54,11 +54,67 @@ export const MOCK_STAFF_USERS = [
   },
 ];
 
+// 2. DESTINATION CATEGORIES / REGIONS
+export const MOCK_DESTINATION_CATEGORIES = [
+  {
+    id: 'cat-north-india',
+    name: 'North India',
+    slug: 'north-india',
+    tagline: 'Royal Forts, Desert Dunes & Himalayan Valleys',
+    description: 'Explore Rajasthan palaces, Delhi heritage, and Golden Triangle circuits.',
+    coverImage: 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=800&q=80',
+    order: 1,
+    status: 'Active',
+  },
+  {
+    id: 'cat-south-india',
+    name: 'South India',
+    slug: 'south-india',
+    tagline: 'Tropical Backwaters, Ancient Temples & Spice Plantations',
+    description: 'Kerala houseboats, Munnar hills, Hampi ruins, and coastal Goa retreats.',
+    coverImage: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=800&q=80',
+    order: 2,
+    status: 'Active',
+  },
+  {
+    id: 'cat-japan',
+    name: 'Japan',
+    slug: 'japan',
+    tagline: 'Cherry Blossoms, Mount Fuji & Shinto Shrines',
+    description: 'Futuristic Tokyo, ancient Kyoto temples, and alpine hot spring onsens.',
+    coverImage: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=800&q=80',
+    order: 3,
+    status: 'Active',
+  },
+  {
+    id: 'cat-america',
+    name: 'America',
+    slug: 'america',
+    tagline: 'Iconic Metros, National Parks & Grand Canyons',
+    description: 'New York City, California coastlines, Las Vegas, and Yellowstone canyons.',
+    coverImage: 'https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?auto=format&fit=crop&w=800&q=80',
+    order: 4,
+    status: 'Active',
+  },
+  {
+    id: 'cat-europe',
+    name: 'Europe',
+    slug: 'europe',
+    tagline: 'Romantic Capitals, Swiss Alps & Mediterranean Seas',
+    description: 'Parisian avenues, Italian historical squares, and Swiss mountain railways.',
+    coverImage: 'https://images.unsplash.com/photo-1502602898657-3e91760cbb34?auto=format&fit=crop&w=800&q=80',
+    order: 5,
+    status: 'Active',
+  },
+];
+
 // 2. CITIES & DESTINATIONS
 export const MOCK_CITIES = [
   {
     id: 'city-jodhpur',
     name: 'Jodhpur',
+    categoryId: 'cat-north-india',
+    categoryName: 'North India',
     state: 'Rajasthan',
     slug: 'jodhpur',
     tagline: 'The Legendary Sun City & Blue Heritage Capital',
@@ -86,6 +142,8 @@ export const MOCK_CITIES = [
   {
     id: 'city-jaipur',
     name: 'Jaipur',
+    categoryId: 'cat-north-india',
+    categoryName: 'North India',
     state: 'Rajasthan',
     slug: 'jaipur',
     tagline: 'The Pink City of Royal Fortresses & Bazaars',
@@ -110,6 +168,8 @@ export const MOCK_CITIES = [
   {
     id: 'city-udaipur',
     name: 'Udaipur',
+    categoryId: 'cat-north-india',
+    categoryName: 'North India',
     state: 'Rajasthan',
     slug: 'udaipur',
     tagline: 'City of Lakes & Romantic Palaces',
@@ -133,6 +193,8 @@ export const MOCK_CITIES = [
   {
     id: 'city-jaisalmer',
     name: 'Jaisalmer',
+    categoryId: 'cat-north-india',
+    categoryName: 'North India',
     state: 'Rajasthan',
     slug: 'jaisalmer',
     tagline: 'The Golden City & Sam Sand Dunes Haven',
@@ -152,6 +214,75 @@ export const MOCK_CITIES = [
     status: 'Published',
     featured: true,
     createdAt: '2025-01-15T09:00:00Z',
+  },
+  {
+    id: 'city-kochi',
+    name: 'Kochi & Munnar',
+    categoryId: 'cat-south-india',
+    categoryName: 'South India',
+    state: 'Kerala',
+    slug: 'kochi-munnar',
+    tagline: 'Queen of the Arabian Sea & Misty Tea Valleys',
+    heroTitle: 'Serene Kerala: Houseboat Cruises & Munnar Hill Retreats',
+    metaTitle: 'Kerala Tour Packages & Munnar Tea Plantation Sightseeing',
+    metaDescription: 'Experience tranquil Alleppey backwater houseboats, Fort Kochi Chinese fishing nets, and Munnar misty mountain walks.',
+    keywords: 'kerala tour packages, munnar hill station, kochi sightseeing, alleppey houseboat',
+    bannerImage: 'https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?auto=format&fit=crop&w=1200&q=80',
+    gallery: [],
+    highlights: ['Alleppey Backwaters', 'Munnar Tea Gardens', 'Chinese Fishing Nets', 'Kathakali Folk Dance'],
+    faqs: [
+      { question: 'What is the best time for Kerala tour?', answer: 'September to March offers pleasant weather for houseboats and hill station walks.' }
+    ],
+    packagesCount: 2,
+    status: 'Published',
+    featured: true,
+    createdAt: '2025-02-01T10:00:00Z',
+  },
+  {
+    id: 'city-tokyo',
+    name: 'Tokyo & Kyoto',
+    categoryId: 'cat-japan',
+    categoryName: 'Japan',
+    state: 'Kanto & Kansai',
+    slug: 'tokyo-kyoto',
+    tagline: 'Futuristic Skyscrapers, Shinto Shrines & Cherry Blossoms',
+    heroTitle: 'Discover Japan: Shinkansen Bullet Trains & Ancient Shrines',
+    metaTitle: 'Japan Tour Packages — Tokyo, Kyoto & Mount Fuji',
+    metaDescription: 'Explore vibrant Shibuya crossings, Mount Fuji views, and serene Fushimi Inari golden shrines in Japan.',
+    keywords: 'japan tours, tokyo travel, kyoto temples, mount fuji tour',
+    bannerImage: 'https://images.unsplash.com/photo-1493976040374-85c8e12f0c0e?auto=format&fit=crop&w=1200&q=80',
+    gallery: [],
+    highlights: ['Shibuya Crossing', 'Fushimi Inari Shrine', 'Mount Fuji 5th Station', 'Kyoto Bamboo Forest'],
+    faqs: [
+      { question: 'When is Cherry Blossom season?', answer: 'Late March to mid-April is the peak Sakura blooming window in Tokyo and Kyoto.' }
+    ],
+    packagesCount: 3,
+    status: 'Published',
+    featured: true,
+    createdAt: '2025-02-10T10:00:00Z',
+  },
+  {
+    id: 'city-newyork',
+    name: 'New York & California',
+    categoryId: 'cat-america',
+    categoryName: 'America',
+    state: 'USA',
+    slug: 'new-york-california',
+    tagline: 'Manhattan Skylines, Golden Gate & Grand Canyons',
+    heroTitle: 'The American Grand Voyage: Coast to Coast Highlights',
+    metaTitle: 'USA Tour Packages — New York, San Francisco & Canyons',
+    metaDescription: 'Explore Times Square, Statue of Liberty, Grand Canyon helicopter tours, and San Francisco Bay.',
+    keywords: 'usa tours, new york vacation, california road trip, grand canyon tour',
+    bannerImage: 'https://images.unsplash.com/photo-1506146332389-18140dc7b2fb?auto=format&fit=crop&w=1200&q=80',
+    gallery: [],
+    highlights: ['Statue of Liberty', 'Times Square & Broadway', 'Golden Gate Bridge', 'Grand Canyon National Park'],
+    faqs: [
+      { question: 'Is domestic US flight included?', answer: 'Yes, coast-to-coast flights between NY and SF are included in complete packages.' }
+    ],
+    packagesCount: 2,
+    status: 'Published',
+    featured: false,
+    createdAt: '2025-02-15T10:00:00Z',
   },
 ];
 
@@ -905,3 +1036,4 @@ export const INITIAL_REVIEWS = MOCK_REVIEWS;
 export const INITIAL_TEAM = MOCK_TEAM;
 export const INITIAL_SETTINGS = MOCK_SETTINGS;
 export const INITIAL_STAFF = MOCK_STAFF_USERS;
+export const INITIAL_DESTINATION_CATEGORIES = MOCK_DESTINATION_CATEGORIES;

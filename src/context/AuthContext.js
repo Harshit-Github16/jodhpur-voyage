@@ -32,18 +32,15 @@ export function AuthProvider({ children }) {
         setUser(JSON.parse(storedUser));
         setIsAuthenticated(true);
       } else {
-        // Fallback default admin for instant access if none set
-        setUser(MOCK_ADMIN_USER);
-        setToken(MOCK_ADMIN_USER.token);
-        setIsAuthenticated(true);
-        localStorage.setItem('jv_auth_token', MOCK_ADMIN_USER.token);
-        localStorage.setItem('jv_auth_user', JSON.stringify(MOCK_ADMIN_USER));
+        setUser(null);
+        setToken(null);
+        setIsAuthenticated(false);
       }
     } catch (e) {
       console.warn('Auth initialization error:', e);
-      setUser(MOCK_ADMIN_USER);
-      setToken(MOCK_ADMIN_USER.token);
-      setIsAuthenticated(true);
+      setUser(null);
+      setToken(null);
+      setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
     }

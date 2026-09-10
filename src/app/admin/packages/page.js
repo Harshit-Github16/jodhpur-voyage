@@ -571,7 +571,7 @@ export default function PackagesManagementPage() {
                       >
                         {cities.map((c) => (
                           <option key={c.id} value={c.name}>
-                            {c.name}
+                            {c.name} ({c.categoryName || c.state || 'Destination'})
                           </option>
                         ))}
                       </select>
