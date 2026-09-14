@@ -2,11 +2,11 @@ import axios from 'axios';
 
 /**
  * Jodhpur Voyage Centralized API Client
- * Configured with baseURL (http://localhost:5000/api/v1), withCredentials,
+ * Configured with baseURL (https://jodhpur-voyage-backend.vercel.app/api/v1), withCredentials,
  * automatic JWT header injection, and 401 automatic token refresh.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://jodhpur-voyage-backend.vercel.app/api/v1';
 
 // Create Axios Instance
 export const apiClient = axios.create({
