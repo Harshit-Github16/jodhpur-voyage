@@ -13,7 +13,6 @@ export function TourProvider({ children }) {
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
 
-  // Safe admin toast helper
   let adminContext;
   try {
     // eslint-disable-next-line react-hooks/rules-of-hooks
@@ -27,15 +26,18 @@ export function TourProvider({ children }) {
     setError(null);
     try {
       const res = await toursApi.getTours({
-        category: selectedCategory,
-        search: searchQuery,
+        category: selectedCategory !== 'All' ? selectedCategory : undefined,
+        search: searchQuery || undefined,
       });
-      if (res.success && res.data) {
-        setTours(res.data);
+      if (res?.data) {
+        setTours(Array.isArray(res.data) ? res.data : res.data.data || []);
+      } else {
+        setTours([]);
       }
     } catch (err) {
       console.error('Error fetching tours:', err);
       setError(err?.message || 'Failed to load tours');
+      setTours([]);
     } finally {
       setLoading(false);
     }
@@ -48,12 +50,13 @@ export function TourProvider({ children }) {
   const addTour = useCallback(async (tourData) => {
     try {
       const res = await toursApi.createTour(tourData);
-      if (res.success && res.data) {
-        setTours((prev) => [res.data, ...prev]);
+      if (res?.data) {
+        const created = res.data.data || res.data;
+        setTours((prev) => [created, ...prev]);
         adminContext?.addToast('New tour package created successfully!', 'success');
-        return { success: true, data: res.data };
+        return { success: true, data: created };
       }
-      return { success: false, message: res.message };
+      return { success: false, message: res?.message || 'Creation failed' };
     } catch (err) {
       adminContext?.addToast(err?.message || 'Failed to create tour', 'error');
       return { success: false, message: err?.message };
@@ -63,12 +66,13 @@ export function TourProvider({ children }) {
   const updateTour = useCallback(async (id, updateFields) => {
     try {
       const res = await toursApi.updateTour(id, updateFields);
-      if (res.success && res.data) {
-        setTours((prev) => prev.map((t) => (t.id === id ? res.data : t)));
+      if (res?.data) {
+        const updated = res.data.data || res.data;
+        setTours((prev) => prev.map((t) => (t.id === id ? updated : t)));
         adminContext?.addToast('Tour updated successfully', 'success');
-        return { success: true, data: res.data };
+        return { success: true, data: updated };
       }
-      return { success: false, message: res.message };
+      return { success: false, message: res?.message || 'Update failed' };
     } catch (err) {
       adminContext?.addToast(err?.message || 'Failed to update tour', 'error');
       return { success: false, message: err?.message };
@@ -78,12 +82,9 @@ export function TourProvider({ children }) {
   const deleteTour = useCallback(async (id) => {
     try {
       const res = await toursApi.deleteTour(id);
-      if (res.success) {
-        setTours((prev) => prev.filter((t) => t.id !== id));
-        adminContext?.addToast('Tour deleted', 'info');
-        return { success: true };
-      }
-      return { success: false, message: res.message };
+      setTours((prev) => prev.filter((t) => t.id !== id));
+      adminContext?.addToast('Tour deleted successfully', 'info');
+      return { success: true, data: res };
     } catch (err) {
       adminContext?.addToast(err?.message || 'Failed to delete tour', 'error');
       return { success: false, message: err?.message };

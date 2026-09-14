@@ -1,45 +1,29 @@
-import apiClient, { executeApi } from './client';
+import apiClient from './client';
 import { API_ENDPOINTS } from './endpoints';
-import { INITIAL_STATS } from './mockData';
 
 export const analyticsApi = {
   /**
-   * Get main Admin dashboard summary statistics
+   * Get Executive Dashboard Metrics
+   * GET /analytics/dashboard
    */
-  getDashboardStats: async () => {
-    return executeApi(
-      apiClient.get(API_ENDPOINTS.ANALYTICS.DASHBOARD_STATS),
-      () => ({
-        success: true,
-        data: INITIAL_STATS,
-      })
-    );
+  getDashboardMetrics: async () => {
+    return apiClient.get(API_ENDPOINTS.ANALYTICS.DASHBOARD);
   },
 
   /**
-   * Get revenue over time
+   * Get Revenue Trend (Last 6-12 Months)
+   * GET /analytics/revenue
    */
-  getRevenueAnalytics: async (timeframe = '6months') => {
-    return executeApi(
-      apiClient.get(API_ENDPOINTS.ANALYTICS.REVENUE, { params: { timeframe } }),
-      () => ({
-        success: true,
-        data: INITIAL_STATS.monthlyTrends,
-      })
-    );
+  getRevenueTrend: async () => {
+    return apiClient.get(API_ENDPOINTS.ANALYTICS.REVENUE);
   },
 
   /**
-   * Get category popularity breakdown
+   * Get Category Popularity Breakdown
+   * GET /analytics/popularity
    */
-  getCategoryBreakdown: async () => {
-    return executeApi(
-      apiClient.get(API_ENDPOINTS.ANALYTICS.POPULARITY),
-      () => ({
-        success: true,
-        data: INITIAL_STATS.popularCategories,
-      })
-    );
+  getCategoryPopularity: async () => {
+    return apiClient.get(API_ENDPOINTS.ANALYTICS.POPULARITY);
   },
 };
 

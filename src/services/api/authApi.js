@@ -1,84 +1,82 @@
-import apiClient, { executeApi, delay } from './client';
+import apiClient, { setAccessToken } from './client';
 import { API_ENDPOINTS } from './endpoints';
-import { MOCK_ADMIN_USER } from './mockData';
 
 export const authApi = {
   /**
-   * User/Admin Login
-   * Accepts credentials (default dummy: superadmin / 12345 or admin@jodhpurvoyage.com)
-   */
-  login: async (credentials) => {
-    return executeApi(
-      apiClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials),
-      () => {
-        const username = (credentials.email || credentials.username || '').trim().toLowerCase();
-        const password = (credentials.password || '').trim();
-
-        // Allow dummy credentials (superadmin / 12345) and standard admin credentials
-        const isValid =
-          (username === 'superadmin' && password === '12345') ||
-          (username === 'admin@jodhpurvoyage.com' && password === 'jodhpur@2025') ||
-          (username === 'superadmin' && !password) ||
-          (password === '12345');
-
-        if (!isValid && password !== '12345' && username !== 'superadmin') {
-          // If custom input given, accept for frictionless demo or validate
-        }
-
-        return {
-          success: true,
-          message: 'Login successful',
-          data: {
-            user: {
-              ...MOCK_ADMIN_USER,
-              name: username === 'superadmin' ? 'Admin (superadmin)' : MOCK_ADMIN_USER.name,
-              email: credentials.email || credentials.username || 'superadmin@jodhpurvoyage.com',
-            },
-            token: 'mock-jwt-token-jodhpur-voyage-valid',
-          },
-        };
-      }
-    );
-  },
-
-  /**
-   * Register a new user
+   * Register a new customer
+   * POST /auth/register
+   * Body: { name, email, password, phone }
    */
   register: async (userData) => {
-    return executeApi(
-      apiClient.post(API_ENDPOINTS.AUTH.REGISTER, userData),
-      () => ({
-        success: true,
-        message: 'Registration successful',
-        data: { user: { ...MOCK_ADMIN_USER, ...userData }, token: 'mock-reg-token' },
-      })
-    );
+    const res = await apiClient.post(API_ENDPOINTS.AUTH.REGISTER, userData);
+    const token = res?.data?.token || res?.data?.accessToken || res?.token;
+    if (token) {
+      setAccessToken(token);
+    }
+    return res;
   },
 
   /**
-   * Fetch current authenticated user profile
+   * User / Staff / Admin Login
+   * POST /auth/login
+   * Body: { email, password }
+   */
+  login: async (credentials) => {
+    const res = await apiClient.post(API_ENDPOINTS.AUTH.LOGIN, credentials);
+    const token = res?.data?.token || res?.data?.accessToken || res?.token;
+    if (token) {
+      setAccessToken(token);
+    }
+    return res;
+  },
+
+  /**
+   * Refresh Access Token
+   * POST /auth/refresh
+   */
+  refresh: async (refreshToken) => {
+    return apiClient.post(API_ENDPOINTS.AUTH.REFRESH, { refreshToken });
+  },
+
+  /**
+   * Get Current User Profile
+   * GET /auth/me
    */
   getMe: async () => {
-    return executeApi(
-      apiClient.get(API_ENDPOINTS.AUTH.ME),
-      () => ({
-        success: true,
-        data: MOCK_ADMIN_USER,
-      })
-    );
+    return apiClient.get(API_ENDPOINTS.AUTH.ME);
   },
 
   /**
-   * Logout user
+   * Update Profile
+   * PUT /auth/profile
+   * Body: { name, phone, avatar }
+   */
+  updateProfile: async (profileData) => {
+    return apiClient.put(API_ENDPOINTS.AUTH.PROFILE, profileData);
+  },
+
+  /**
+   * Change Password
+   * PUT /auth/change-password
+   * Body: { currentPassword, newPassword }
+   */
+  changePassword: async (passwordData) => {
+    return apiClient.put(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, passwordData);
+  },
+
+  /**
+   * Logout
+   * POST /auth/logout
    */
   logout: async () => {
-    return executeApi(
-      apiClient.post(API_ENDPOINTS.AUTH.LOGOUT),
-      () => ({
-        success: true,
-        message: 'Logged out successfully',
-      })
-    );
+    try {
+      const res = await apiClient.post(API_ENDPOINTS.AUTH.LOGOUT);
+      setAccessToken(null);
+      return res;
+    } catch (err) {
+      setAccessToken(null);
+      throw err;
+    }
   },
 };
 

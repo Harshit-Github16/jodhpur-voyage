@@ -13,12 +13,15 @@ export function CustomerProvider({ children }) {
   const fetchCustomers = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await customersApi.getCustomers({ search: searchQuery });
-      if (res.success && res.data) {
-        setCustomers(res.data);
+      const res = await customersApi.getCustomers({ search: searchQuery || undefined });
+      if (res?.data) {
+        setCustomers(Array.isArray(res.data) ? res.data : res.data.data || []);
+      } else {
+        setCustomers([]);
       }
     } catch (e) {
       console.error('Failed to fetch customers:', e);
+      setCustomers([]);
     } finally {
       setLoading(false);
     }

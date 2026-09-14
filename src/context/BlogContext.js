@@ -26,15 +26,18 @@ export function BlogProvider({ children }) {
     setError(null);
     try {
       const res = await blogsApi.getBlogs({
-        category: selectedCategory,
-        search: searchQuery,
+        category: selectedCategory !== 'All' ? selectedCategory : undefined,
+        search: searchQuery || undefined,
       });
-      if (res.success && res.data) {
-        setBlogs(res.data);
+      if (res?.data) {
+        setBlogs(Array.isArray(res.data) ? res.data : res.data.data || []);
+      } else {
+        setBlogs([]);
       }
     } catch (err) {
       console.error('Error fetching blogs:', err);
       setError(err?.message || 'Failed to load blogs');
+      setBlogs([]);
     } finally {
       setLoading(false);
     }
@@ -44,50 +47,58 @@ export function BlogProvider({ children }) {
     fetchBlogs();
   }, [fetchBlogs]);
 
-  const addBlog = useCallback(async (blogData) => {
-    try {
-      const res = await blogsApi.createBlog(blogData);
-      if (res.success && res.data) {
-        setBlogs((prev) => [res.data, ...prev]);
-        adminContext?.addToast(`Blog "${res.data.title.slice(0, 30)}..." published!`, 'success');
-        return { success: true, data: res.data };
+  const addBlog = useCallback(
+    async (blogData) => {
+      try {
+        const res = await blogsApi.createBlog(blogData);
+        if (res?.data) {
+          const created = res.data.data || res.data;
+          setBlogs((prev) => [created, ...prev]);
+          adminContext?.addToast(`Blog published successfully!`, 'success');
+          return { success: true, data: created };
+        }
+        return { success: false, message: res?.message || 'Failed to publish blog' };
+      } catch (err) {
+        adminContext?.addToast(err?.message || 'Failed to publish blog', 'error');
+        return { success: false, message: err?.message };
       }
-      return { success: false, message: res.message };
-    } catch (err) {
-      adminContext?.addToast(err?.message || 'Failed to publish blog', 'error');
-      return { success: false, message: err?.message };
-    }
-  }, [adminContext]);
+    },
+    [adminContext]
+  );
 
-  const updateBlog = useCallback(async (id, updateFields) => {
-    try {
-      const res = await blogsApi.updateBlog(id, updateFields);
-      if (res.success && res.data) {
-        setBlogs((prev) => prev.map((b) => (b.id === id ? res.data : b)));
-        adminContext?.addToast('Blog updated successfully', 'success');
-        return { success: true, data: res.data };
+  const updateBlog = useCallback(
+    async (id, updateFields) => {
+      try {
+        const res = await blogsApi.updateBlog(id, updateFields);
+        if (res?.data) {
+          const updated = res.data.data || res.data;
+          setBlogs((prev) => prev.map((b) => (b.id === id ? updated : b)));
+          adminContext?.addToast('Blog updated successfully', 'success');
+          return { success: true, data: updated };
+        }
+        return { success: false, message: res?.message || 'Update failed' };
+      } catch (err) {
+        adminContext?.addToast(err?.message || 'Failed to update blog', 'error');
+        return { success: false, message: err?.message };
       }
-      return { success: false, message: res.message };
-    } catch (err) {
-      adminContext?.addToast(err?.message || 'Failed to update blog', 'error');
-      return { success: false, message: err?.message };
-    }
-  }, [adminContext]);
+    },
+    [adminContext]
+  );
 
-  const deleteBlog = useCallback(async (id) => {
-    try {
-      const res = await blogsApi.deleteBlog(id);
-      if (res.success) {
+  const deleteBlog = useCallback(
+    async (id) => {
+      try {
+        const res = await blogsApi.deleteBlog(id);
         setBlogs((prev) => prev.filter((b) => b.id !== id));
         adminContext?.addToast('Blog post deleted', 'info');
-        return { success: true };
+        return { success: true, data: res };
+      } catch (err) {
+        adminContext?.addToast(err?.message || 'Failed to delete blog', 'error');
+        return { success: false, message: err?.message };
       }
-      return { success: false, message: res.message };
-    } catch (err) {
-      adminContext?.addToast(err?.message || 'Failed to delete blog', 'error');
-      return { success: false, message: err?.message };
-    }
-  }, [adminContext]);
+    },
+    [adminContext]
+  );
 
   return (
     <BlogContext.Provider

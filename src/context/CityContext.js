@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { citiesApi } from '@/services/api/citiesApi';
+import { destinationCategoriesApi } from '@/services/api/destinationCategoriesApi';
 import { useAdmin } from './AdminContext';
 
 const CityContext = createContext(null);
@@ -22,33 +23,36 @@ export function CityProvider({ children }) {
     adminContext = null;
   }
 
-  // Fetch Categories
+  // Fetch Categories from API
   const fetchCategories = useCallback(async () => {
     try {
-      const res = await citiesApi.getCategories();
-      if (res.success && res.data) {
-        setCategories(res.data);
+      const res = await destinationCategoriesApi.getCategories();
+      if (res?.data) {
+        setCategories(Array.isArray(res.data) ? res.data : res.data.data || []);
       }
     } catch (err) {
       console.error('Error fetching destination categories:', err);
     }
   }, []);
 
-  // Fetch Cities with search & category filter
+  // Fetch Cities with search & category filter from API
   const fetchCities = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const res = await citiesApi.getCities({
-        search: searchQuery,
-        categoryId: selectedCategoryId,
+        search: searchQuery || undefined,
+        categoryId: selectedCategoryId !== 'All' ? selectedCategoryId : undefined,
       });
-      if (res.success && res.data) {
-        setCities(res.data);
+      if (res?.data) {
+        setCities(Array.isArray(res.data) ? res.data : res.data.data || []);
+      } else {
+        setCities([]);
       }
     } catch (err) {
       console.error('Error fetching cities:', err);
       setError(err?.message || 'Failed to load cities');
+      setCities([]);
     } finally {
       setLoading(false);
     }
@@ -66,13 +70,14 @@ export function CityProvider({ children }) {
   const addCategory = useCallback(
     async (categoryData) => {
       try {
-        const res = await citiesApi.createCategory(categoryData);
-        if (res.success && res.data) {
-          setCategories((prev) => [...prev, res.data]);
-          adminContext?.addToast(`Region "${res.data.name}" added successfully!`, 'success');
-          return { success: true, data: res.data };
+        const res = await destinationCategoriesApi.createCategory(categoryData);
+        if (res?.data) {
+          const created = res.data.data || res.data;
+          setCategories((prev) => [...prev, created]);
+          adminContext?.addToast(`Region "${created.name}" added successfully!`, 'success');
+          return { success: true, data: created };
         }
-        return { success: false, message: res.message };
+        return { success: false, message: res?.message || 'Failed to add region' };
       } catch (err) {
         adminContext?.addToast(err?.message || 'Failed to create category', 'error');
         return { success: false, message: err?.message };
@@ -84,15 +89,15 @@ export function CityProvider({ children }) {
   const updateCategory = useCallback(
     async (id, updateFields) => {
       try {
-        const res = await citiesApi.updateCategory(id, updateFields);
-        if (res.success && res.data) {
-          setCategories((prev) => prev.map((c) => (c.id === id ? res.data : c)));
-          // Refresh cities in case category name changed
+        const res = await destinationCategoriesApi.updateCategory(id, updateFields);
+        if (res?.data) {
+          const updated = res.data.data || res.data;
+          setCategories((prev) => prev.map((c) => (c.id === id ? updated : c)));
           fetchCities();
-          adminContext?.addToast(`Category "${res.data.name}" updated`, 'success');
-          return { success: true, data: res.data };
+          adminContext?.addToast(`Category "${updated.name}" updated`, 'success');
+          return { success: true, data: updated };
         }
-        return { success: false, message: res.message };
+        return { success: false, message: res?.message || 'Update failed' };
       } catch (err) {
         adminContext?.addToast(err?.message || 'Failed to update category', 'error');
         return { success: false, message: err?.message };
@@ -104,22 +109,17 @@ export function CityProvider({ children }) {
   const deleteCategory = useCallback(
     async (id) => {
       try {
-        const res = await citiesApi.deleteCategory(id);
-        if (res.success) {
-          setCategories((prev) => prev.filter((c) => c.id !== id));
-          if (selectedCategoryId === id) {
-            setSelectedCategoryId('All');
-          }
-          adminContext?.addToast('Category removed', 'info');
-          return { success: true };
-        }
-        return { success: false, message: res.message };
+        const res = await destinationCategoriesApi.deleteCategory(id);
+        setCategories((prev) => prev.filter((c) => c.id !== id));
+        fetchCities();
+        adminContext?.addToast('Category deleted successfully', 'info');
+        return { success: true, data: res };
       } catch (err) {
         adminContext?.addToast(err?.message || 'Failed to delete category', 'error');
         return { success: false, message: err?.message };
       }
     },
-    [adminContext, selectedCategoryId]
+    [adminContext, fetchCities]
   );
 
   // City CRUD Handlers
@@ -127,14 +127,15 @@ export function CityProvider({ children }) {
     async (cityData) => {
       try {
         const res = await citiesApi.createCity(cityData);
-        if (res.success && res.data) {
-          setCities((prev) => [res.data, ...prev]);
-          adminContext?.addToast(`Destination "${res.data.name}" added to ${res.data.categoryName || 'Region'}!`, 'success');
-          return { success: true, data: res.data };
+        if (res?.data) {
+          const created = res.data.data || res.data;
+          setCities((prev) => [created, ...prev]);
+          adminContext?.addToast(`City "${created.name}" created successfully!`, 'success');
+          return { success: true, data: created };
         }
-        return { success: false, message: res.message };
+        return { success: false, message: res?.message || 'Failed to create city' };
       } catch (err) {
-        adminContext?.addToast(err?.message || 'Failed to add city', 'error');
+        adminContext?.addToast(err?.message || 'Failed to create city', 'error');
         return { success: false, message: err?.message };
       }
     },
@@ -145,12 +146,13 @@ export function CityProvider({ children }) {
     async (id, updateFields) => {
       try {
         const res = await citiesApi.updateCity(id, updateFields);
-        if (res.success && res.data) {
-          setCities((prev) => prev.map((c) => (c.id === id ? res.data : c)));
-          adminContext?.addToast(`City "${res.data.name}" updated`, 'success');
-          return { success: true, data: res.data };
+        if (res?.data) {
+          const updated = res.data.data || res.data;
+          setCities((prev) => prev.map((c) => (c.id === id ? updated : c)));
+          adminContext?.addToast(`City updated successfully`, 'success');
+          return { success: true, data: updated };
         }
-        return { success: false, message: res.message };
+        return { success: false, message: res?.message || 'Update failed' };
       } catch (err) {
         adminContext?.addToast(err?.message || 'Failed to update city', 'error');
         return { success: false, message: err?.message };
@@ -163,12 +165,9 @@ export function CityProvider({ children }) {
     async (id) => {
       try {
         const res = await citiesApi.deleteCity(id);
-        if (res.success) {
-          setCities((prev) => prev.filter((c) => c.id !== id));
-          adminContext?.addToast('City removed from portal', 'info');
-          return { success: true };
-        }
-        return { success: false, message: res.message };
+        setCities((prev) => prev.filter((c) => c.id !== id));
+        adminContext?.addToast('City deleted successfully', 'info');
+        return { success: true, data: res };
       } catch (err) {
         adminContext?.addToast(err?.message || 'Failed to delete city', 'error');
         return { success: false, message: err?.message };
@@ -182,20 +181,20 @@ export function CityProvider({ children }) {
       value={{
         cities,
         categories,
-        selectedCategoryId,
-        setSelectedCategoryId,
         loading,
         error,
+        selectedCategoryId,
+        setSelectedCategoryId,
         searchQuery,
         setSearchQuery,
         fetchCities,
         fetchCategories,
-        addCategory,
-        updateCategory,
-        deleteCategory,
         addCity,
         updateCity,
         deleteCity,
+        addCategory,
+        updateCategory,
+        deleteCategory,
       }}
     >
       {children}

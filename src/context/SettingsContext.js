@@ -1,56 +1,69 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { INITIAL_SETTINGS } from '@/data/mockData';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { settingsApi } from '@/services/api/settingsApi';
 
 const SettingsContext = createContext();
 
-const STORAGE_KEY = 'jodhpur_voyage_settings_v1';
-
 export function SettingsProvider({ children }) {
-  const [settings, setSettings] = useState(INITIAL_SETTINGS);
+  const [settings, setSettings] = useState({
+    siteName: 'Jodhpur Voyage',
+    siteTagline: 'Luxury Heritage Travel & Royal Experiences in Blue City',
+    supportEmail: 'concierge@jodhpurvoyage.com',
+    supportPhone: '+91 291 254 8900',
+    address: 'Haveli Tower, Clock Tower Road, Old City, Jodhpur, Rajasthan 342001',
+    currency: 'INR',
+    currencySymbol: '₹',
+    maintenanceMode: false,
+  });
   const [isSavedRecently, setIsSavedRecently] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchSettings = useCallback(async () => {
+    setLoading(true);
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setSettings(JSON.parse(saved));
-      } else {
-        setSettings(INITIAL_SETTINGS);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_SETTINGS));
+      const res = await settingsApi.getSettings();
+      if (res?.data) {
+        setSettings(res.data.data || res.data);
       }
     } catch (e) {
-      console.error('Failed to load settings from localStorage:', e);
-      setSettings(INITIAL_SETTINGS);
+      console.warn('Failed to load settings from API:', e);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
-  const saveSettings = (newSettings) => {
-    setSettings(newSettings);
+  useEffect(() => {
+    fetchSettings();
+  }, [fetchSettings]);
+
+  const saveSettings = async (newSettings) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+      const res = await settingsApi.updateSettings(newSettings);
+      if (res?.data) {
+        setSettings(res.data.data || res.data);
+      } else {
+        setSettings(newSettings);
+      }
       setIsSavedRecently(true);
       setTimeout(() => setIsSavedRecently(false), 3000);
     } catch (e) {
-      console.error('Failed to save settings to localStorage:', e);
+      console.error('Failed to save settings:', e);
+      throw e;
     }
   };
 
-  const resetToDefaults = () => {
-    setSettings(INITIAL_SETTINGS);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_SETTINGS));
-    } catch (e) {
-      console.error('Failed to reset settings:', e);
-    }
+  const resetToDefaults = async () => {
+    await fetchSettings();
   };
 
   return (
     <SettingsContext.Provider
       value={{
         settings,
+        loading,
         isSavedRecently,
+        fetchSettings,
         saveSettings,
         resetToDefaults,
       }}

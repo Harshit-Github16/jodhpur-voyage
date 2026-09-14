@@ -26,9 +26,9 @@ export default function LoginPage() {
   const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const { addToast } = useAdmin();
 
-  // Pre-filled credentials
-  const [username, setUsername] = useState('superadmin');
-  const [password, setPassword] = useState('12345');
+  // Input credentials
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -45,12 +45,12 @@ export default function LoginPage() {
     setSubmitting(true);
 
     try {
-      const res = await login({ email: username, username, password });
+      const res = await login({ email: username, password });
       if (res.success) {
         addToast('Welcome back to Jodhpur Voyage Portal', 'success', 2500);
         router.push('/admin');
       } else {
-        setErrorMessage(res.message || 'Invalid username or password');
+        setErrorMessage(res.message || 'Invalid email or password');
       }
     } catch (err) {
       setErrorMessage(err?.message || 'Authentication error');

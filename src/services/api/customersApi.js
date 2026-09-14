@@ -1,27 +1,14 @@
-import apiClient, { executeApi } from './client';
-import { INITIAL_CUSTOMERS } from './mockData';
-
-let customersStore = [...INITIAL_CUSTOMERS];
+import apiClient from './client';
+import { API_ENDPOINTS } from './endpoints';
 
 export const customersApi = {
+  /**
+   * Get customer list with metrics (Admin)
+   * GET /customers
+   * Params: { search, status, page, limit }
+   */
   getCustomers: async (params = {}) => {
-    return executeApi(
-      apiClient.get('/customers', { params }),
-      () => {
-        let filtered = [...customersStore];
-        if (params.search) {
-          const q = params.search.toLowerCase();
-          filtered = filtered.filter(
-            (c) =>
-              c.name.toLowerCase().includes(q) ||
-              c.email.toLowerCase().includes(q) ||
-              c.phone.toLowerCase().includes(q) ||
-              c.city.toLowerCase().includes(q)
-          );
-        }
-        return { success: true, count: filtered.length, data: filtered };
-      }
-    );
+    return apiClient.get(API_ENDPOINTS.CUSTOMERS.LIST, { params });
   },
 };
 

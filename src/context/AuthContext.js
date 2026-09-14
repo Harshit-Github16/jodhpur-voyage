@@ -2,74 +2,118 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { authApi } from '@/services/api/authApi';
-import { MOCK_ADMIN_USER, INITIAL_STAFF } from '@/data/mockData';
+import { usersApi } from '@/services/api/usersApi';
+import { getAccessToken, setAccessToken } from '@/services/api/client';
 
 const AuthContext = createContext(null);
-const STAFF_STORAGE_KEY = 'jv_staff_users_v1';
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [staffUsers, setStaffUsers] = useState(INITIAL_STAFF);
+  const [staffUsers, setStaffUsers] = useState([]);
 
-  // Initialize auth and staff users from storage on mount
-  useEffect(() => {
+  // Fetch staff users directly from backend API
+  const fetchStaffUsers = useCallback(async () => {
     try {
-      const storedToken = localStorage.getItem('jv_auth_token');
-      const storedUser = localStorage.getItem('jv_auth_user');
-      const storedStaff = localStorage.getItem(STAFF_STORAGE_KEY);
-
-      if (storedStaff) {
-        setStaffUsers(JSON.parse(storedStaff));
-      } else {
-        localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(INITIAL_STAFF));
-      }
-
-      if (storedToken && storedUser) {
-        setToken(storedToken);
-        setUser(JSON.parse(storedUser));
-        setIsAuthenticated(true);
-      } else {
-        setUser(null);
-        setToken(null);
-        setIsAuthenticated(false);
+      const res = await usersApi.getStaff();
+      if (res.success && res.data) {
+        setStaffUsers(res.data);
       }
     } catch (e) {
-      console.warn('Auth initialization error:', e);
-      setUser(null);
-      setToken(null);
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
+      console.warn('Failed to fetch staff from API:', e);
     }
   }, []);
 
-  const saveStaffToStorage = (updatedList) => {
-    setStaffUsers(updatedList);
-    try {
-      localStorage.setItem(STAFF_STORAGE_KEY, JSON.stringify(updatedList));
-    } catch (e) {
-      console.error('Failed to save staff users:', e);
+  // Initialize auth and profile on mount
+  useEffect(() => {
+    async function initAuth() {
+      try {
+        const storedToken = getAccessToken();
+        const storedUser = localStorage.getItem('jv_auth_user');
+
+        if (storedToken) {
+          setToken(storedToken);
+          if (storedUser) {
+            try {
+              setUser(JSON.parse(storedUser));
+              setIsAuthenticated(true);
+            } catch (err) {
+              // invalid json
+            }
+          }
+
+          // Verify with /auth/me
+          try {
+            const meRes = await authApi.getMe();
+            if (meRes.success && meRes.data) {
+              setUser(meRes.data);
+              setIsAuthenticated(true);
+              localStorage.setItem('jv_auth_user', JSON.stringify(meRes.data));
+            }
+          } catch (err) {
+            console.warn('Silent /auth/me check failed:', err);
+          }
+        } else {
+          setUser(null);
+          setToken(null);
+          setIsAuthenticated(false);
+        }
+
+        if (storedToken) {
+          await fetchStaffUsers();
+        }
+      } catch (e) {
+        console.warn('Auth initialization error:', e);
+      } finally {
+        setIsLoading(false);
+      }
     }
-  };
+
+    initAuth();
+  }, [fetchStaffUsers]);
 
   const login = useCallback(async (credentials) => {
     setIsLoading(true);
     try {
       const res = await authApi.login(credentials);
       if (res.success && res.data) {
-        setUser(res.data.user);
-        setToken(res.data.token);
+        const loggedUser = res.data.user;
+        const loggedToken = res.data.token || res.data.accessToken;
+        setUser(loggedUser);
+        setToken(loggedToken);
         setIsAuthenticated(true);
-        localStorage.setItem('jv_auth_token', res.data.token);
-        localStorage.setItem('jv_auth_user', JSON.stringify(res.data.user));
-        return { success: true, user: res.data.user };
+        setAccessToken(loggedToken);
+        localStorage.setItem('jv_auth_user', JSON.stringify(loggedUser));
+        await fetchStaffUsers();
+        return { success: true, user: loggedUser, data: res.data };
       }
       return { success: false, message: res.message || 'Invalid credentials' };
     } catch (error) {
       return { success: false, message: error?.message || 'Login failed' };
+    } finally {
+      setIsLoading(false);
+    }
+  }, [fetchStaffUsers]);
+
+  const register = useCallback(async (userData) => {
+    setIsLoading(true);
+    try {
+      const res = await authApi.register(userData);
+      if (res.success && res.data) {
+        const newUser = res.data.user;
+        const newToken = res.data.token || res.data.accessToken;
+        setUser(newUser);
+        setToken(newToken);
+        setIsAuthenticated(true);
+        setAccessToken(newToken);
+        localStorage.setItem('jv_auth_user', JSON.stringify(newUser));
+        return { success: true, user: newUser, data: res.data };
+      }
+      return { success: false, message: res.message || 'Registration failed' };
+    } catch (error) {
+      return { success: false, message: error?.message || 'Registration failed' };
     } finally {
       setIsLoading(false);
     }
@@ -88,33 +132,47 @@ export function AuthProvider({ children }) {
     localStorage.setItem('jv_auth_user', JSON.stringify(staffMember));
   }, []);
 
-  const addStaffUser = useCallback((newStaff) => {
-    const userWithId = {
-      ...newStaff,
-      id: `usr-admin-${Date.now().toString().slice(-4)}`,
-      status: newStaff.status || 'Active',
-      lastLogin: 'Just now',
-      avatar: newStaff.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=150&q=80',
-    };
-    const updated = [userWithId, ...staffUsers];
-    saveStaffToStorage(updated);
-    return userWithId;
-  }, [staffUsers]);
-
-  const updateStaffUser = useCallback((id, patchData) => {
-    const updated = staffUsers.map((item) =>
-      item.id === id ? { ...item, ...patchData } : item
-    );
-    saveStaffToStorage(updated);
-    if (user && user.id === id) {
-      setUser((prev) => ({ ...prev, ...patchData }));
+  const addStaffUser = useCallback(async (newStaff) => {
+    try {
+      const res = await usersApi.createStaff(newStaff);
+      if (res.success && res.data) {
+        const created = res.data;
+        setStaffUsers((prev) => [created, ...prev]);
+        return created;
+      }
+      throw new Error(res.message || 'Failed to create staff');
+    } catch (err) {
+      console.error('Failed to create staff via API:', err);
+      throw err;
     }
-  }, [staffUsers, user]);
+  }, []);
 
-  const deleteStaffUser = useCallback((id) => {
-    const updated = staffUsers.filter((item) => item.id !== id);
-    saveStaffToStorage(updated);
-  }, [staffUsers]);
+  const updateStaffUser = useCallback(async (id, patchData) => {
+    try {
+      if (patchData.status) {
+        await usersApi.updateUserStatus(id, patchData.status);
+      }
+      setStaffUsers((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, ...patchData } : item))
+      );
+      if (user && user.id === id) {
+        setUser((prev) => ({ ...prev, ...patchData }));
+      }
+    } catch (err) {
+      console.error('Failed to update staff status via API:', err);
+      throw err;
+    }
+  }, [user]);
+
+  const deleteStaffUser = useCallback(async (id) => {
+    try {
+      await usersApi.deleteStaff(id);
+      setStaffUsers((prev) => prev.filter((item) => item.id !== id));
+    } catch (err) {
+      console.error('Failed to delete staff via API:', err);
+      throw err;
+    }
+  }, []);
 
   const logout = useCallback(async () => {
     try {
@@ -125,7 +183,7 @@ export function AuthProvider({ children }) {
       setUser(null);
       setToken(null);
       setIsAuthenticated(false);
-      localStorage.removeItem('jv_auth_token');
+      setAccessToken(null);
       localStorage.removeItem('jv_auth_user');
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
@@ -133,12 +191,23 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const updateProfile = useCallback((updatedData) => {
-    setUser((prev) => {
-      const updated = { ...prev, ...updatedData };
-      localStorage.setItem('jv_auth_user', JSON.stringify(updated));
-      return updated;
-    });
+  const updateProfile = useCallback(async (updatedData) => {
+    try {
+      const res = await authApi.updateProfile(updatedData);
+      if (res.success && res.data) {
+        setUser(res.data);
+        localStorage.setItem('jv_auth_user', JSON.stringify(res.data));
+        return { success: true, data: res.data };
+      }
+      return { success: false, message: res.message };
+    } catch (err) {
+      console.error('API updateProfile failed:', err);
+      throw err;
+    }
+  }, []);
+
+  const changePassword = useCallback(async (passwordData) => {
+    return authApi.changePassword(passwordData);
   }, []);
 
   return (
@@ -150,6 +219,7 @@ export function AuthProvider({ children }) {
         isLoading,
         staffUsers,
         login,
+        register,
         logout,
         switchRole,
         switchActiveUser,
@@ -157,6 +227,8 @@ export function AuthProvider({ children }) {
         updateStaffUser,
         deleteStaffUser,
         updateProfile,
+        changePassword,
+        fetchStaffUsers,
       }}
     >
       {children}

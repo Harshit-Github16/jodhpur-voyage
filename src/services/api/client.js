@@ -2,78 +2,134 @@ import axios from 'axios';
 
 /**
  * Jodhpur Voyage Centralized API Client
- * Configured with baseURL, timeout, request/response interceptors, and graceful fallback handling.
+ * Configured with baseURL (http://localhost:5000/api/v1), withCredentials,
+ * automatic JWT header injection, and 401 automatic token refresh.
  */
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.jodhpurvoyage.com/v1';
-export const ENABLE_MOCK_FALLBACK = process.env.NEXT_PUBLIC_ENABLE_MOCK_API !== 'false';
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000/api/v1';
 
 // Create Axios Instance
 export const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 10000,
+  timeout: 15000,
+  withCredentials: true, // required for httpOnly refresh cookies
   headers: {
     'Content-Type': 'application/json',
     Accept: 'application/json',
   },
 });
 
-// Request Interceptor: Attach Auth Bearer Token if present
+// Helper to get access token from localStorage safely
+export const getAccessToken = () => {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('accessToken') || localStorage.getItem('jv_auth_token') || null;
+};
+
+// Helper to set access token in localStorage
+export const setAccessToken = (token) => {
+  if (typeof window === 'undefined') return;
+  if (token) {
+    localStorage.setItem('accessToken', token);
+    localStorage.setItem('jv_auth_token', token);
+  } else {
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('jv_auth_token');
+  }
+};
+
+// Request Interceptor: Auto-attach JWT access token if present
 apiClient.interceptors.request.use(
   (config) => {
-    if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('jv_auth_token');
-      if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
-      }
+    const token = getAccessToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
     config.headers['X-Client-Timestamp'] = new Date().toISOString();
     return config;
   },
-  (error) => {
-    return Promise.reject(error);
-  }
+  (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Global Error & Unauthenticated handling
+// Response Interceptor: Auto-refresh token on 401 Unauthorized
+let isRefreshing = false;
+let failedQueue = [];
+
+const processQueue = (error, token = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+  failedQueue = [];
+};
+
 apiClient.interceptors.response.use(
   (response) => {
     return response.data;
   },
-  (error) => {
+  async (error) => {
+    const originalRequest = error.config;
+
+    // Normalize error object
     const errorResponse = {
       success: false,
-      message: error?.response?.data?.message || error.message || 'An unexpected API error occurred',
-      status: error?.response?.status || 500,
+      statusCode: error?.response?.status || error?.response?.data?.statusCode || 500,
+      message:
+        error?.response?.data?.message ||
+        error?.message ||
+        'An unexpected API error occurred',
+      errors: error?.response?.data?.errors || [],
       data: error?.response?.data || null,
     };
 
-    if (error.response?.status === 401) {
-      console.warn('[API Auth]: Session expired or unauthenticated.');
+    if (
+      error.response?.status === 401 &&
+      !originalRequest?._retry &&
+      !originalRequest?.url?.includes('/auth/login') &&
+      !originalRequest?.url?.includes('/auth/refresh')
+    ) {
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            originalRequest.headers.Authorization = `Bearer ${token}`;
+            return apiClient(originalRequest);
+          })
+          .catch((err) => Promise.reject(err));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        const storedToken = getAccessToken();
+        const { data } = await axios.post(
+          `${BASE_URL}/auth/refresh`,
+          { refreshToken: storedToken },
+          { withCredentials: true }
+        );
+
+        const newToken = data?.data?.token || data?.token || data?.data?.accessToken;
+        if (newToken) {
+          setAccessToken(newToken);
+          apiClient.defaults.headers.common.Authorization = `Bearer ${newToken}`;
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+          processQueue(null, newToken);
+          return apiClient(originalRequest);
+        }
+      } catch (refreshErr) {
+        processQueue(refreshErr, null);
+        setAccessToken(null);
+      } finally {
+        isRefreshing = false;
+      }
     }
 
     return Promise.reject(errorResponse);
   }
 );
-
-/**
- * Simulated delay helper for realistic local feel
- */
-export const delay = (ms = 150) => new Promise((resolve) => setTimeout(resolve, ms));
-
-/**
- * Helper to safely execute an API call with automatic mock fallback if backend is offline.
- */
-export async function executeApi(realApiPromise, mockFallbackFn) {
-  try {
-    return await realApiPromise;
-  } catch (error) {
-    if (ENABLE_MOCK_FALLBACK && mockFallbackFn) {
-      await delay(120);
-      return mockFallbackFn();
-    }
-    throw error;
-  }
-}
 
 export default apiClient;

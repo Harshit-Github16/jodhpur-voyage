@@ -1,80 +1,94 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { INITIAL_ENQUIRIES } from '@/data/mockData';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { enquiriesApi } from '@/services/api/enquiriesApi';
 
 const EnquiryContext = createContext();
-
-const STORAGE_KEY = 'jodhpur_voyage_enquiries_v1';
 
 export function EnquiryProvider({ children }) {
   const [enquiries, setEnquiries] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
 
-  // Initialize from LocalStorage or mock data
-  useEffect(() => {
+  const fetchEnquiries = useCallback(async () => {
+    setLoading(true);
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setEnquiries(JSON.parse(saved));
+      const res = await enquiriesApi.getEnquiries({
+        search: searchQuery || undefined,
+        status: statusFilter !== 'All' ? statusFilter : undefined,
+      });
+      if (res?.data) {
+        setEnquiries(Array.isArray(res.data) ? res.data : res.data.data || []);
       } else {
-        setEnquiries(INITIAL_ENQUIRIES);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_ENQUIRIES));
+        setEnquiries([]);
       }
     } catch (e) {
-      console.error('Failed to load enquiries from localStorage:', e);
-      setEnquiries(INITIAL_ENQUIRIES);
+      console.warn('Failed to load enquiries from API:', e);
+      setEnquiries([]);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [searchQuery, statusFilter]);
 
-  const saveToStorage = (updated) => {
-    setEnquiries(updated);
+  useEffect(() => {
+    fetchEnquiries();
+  }, [fetchEnquiries]);
+
+  const addEnquiry = async (newEnq) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {
-      console.error('Failed to save enquiries to localStorage:', e);
+      const res = await enquiriesApi.createEnquiry(newEnq);
+      if (res?.data) {
+        const created = res.data.data || res.data;
+        setEnquiries((prev) => [created, ...prev]);
+        return created;
+      }
+    } catch (err) {
+      console.error('Failed to submit enquiry via API:', err);
+      throw err;
     }
   };
 
-  const addEnquiry = (newEnq) => {
-    const enqWithId = {
-      ...newEnq,
-      id: `ENQ-${Date.now().toString().slice(-4)}`,
-      status: newEnq.status || 'New',
-      createdAt: new Date().toISOString(),
-      notes: newEnq.notes || '',
-    };
-    const updated = [enqWithId, ...enquiries];
-    saveToStorage(updated);
-    return enqWithId;
+  const updateStatus = async (id, newStatus, note = '') => {
+    try {
+      await enquiriesApi.updateEnquiryStatus(id, { status: newStatus, note });
+      setEnquiries((prev) =>
+        prev.map((item) =>
+          item.id === id ? { ...item, status: newStatus, ...(note ? { notes: note } : {}) } : item
+        )
+      );
+    } catch (err) {
+      console.error('Failed to update enquiry status via API:', err);
+      throw err;
+    }
   };
 
-  const updateStatus = (id, newStatus) => {
-    const updated = enquiries.map((item) =>
-      item.id === id ? { ...item, status: newStatus } : item
-    );
-    saveToStorage(updated);
-  };
-
-  const updateNotes = (id, notes) => {
-    const updated = enquiries.map((item) =>
-      item.id === id ? { ...item, notes } : item
-    );
-    saveToStorage(updated);
+  const updateNotes = async (id, notes) => {
+    try {
+      await enquiriesApi.updateEnquiryStatus(id, { note: notes });
+      setEnquiries((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, notes } : item))
+      );
+    } catch (err) {
+      console.error('Failed to update enquiry note via API:', err);
+      throw err;
+    }
   };
 
   const updateEnquiry = (id, patchData) => {
-    const updated = enquiries.map((item) =>
-      item.id === id ? { ...item, ...patchData } : item
+    setEnquiries((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, ...patchData } : item))
     );
-    saveToStorage(updated);
   };
 
-  const deleteEnquiry = (id) => {
-    const updated = enquiries.filter((item) => item.id !== id);
-    saveToStorage(updated);
+  const deleteEnquiry = async (id) => {
+    try {
+      await enquiriesApi.deleteEnquiry(id);
+      setEnquiries((prev) => prev.filter((item) => item.id !== id));
+    } catch (err) {
+      console.error('Failed to delete enquiry via API:', err);
+      throw err;
+    }
   };
 
   // Helper to generate CSV export
@@ -138,6 +152,11 @@ export function EnquiryProvider({ children }) {
         newCount,
         contactedCount,
         convertedCount,
+        searchQuery,
+        setSearchQuery,
+        statusFilter,
+        setStatusFilter,
+        fetchEnquiries,
         addEnquiry,
         updateStatus,
         updateNotes,

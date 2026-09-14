@@ -1,61 +1,59 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { INITIAL_REVIEWS } from '@/data/mockData';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { reviewsApi } from '@/services/api/reviewsApi';
 
 const ReviewContext = createContext();
-
-const STORAGE_KEY = 'jodhpur_voyage_reviews_v1';
 
 export function ReviewProvider({ children }) {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchReviews = useCallback(async () => {
+    setLoading(true);
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setReviews(JSON.parse(saved));
+      const res = await reviewsApi.getReviews();
+      if (res?.data) {
+        setReviews(Array.isArray(res.data) ? res.data : res.data.data || []);
       } else {
-        setReviews(INITIAL_REVIEWS);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_REVIEWS));
+        setReviews([]);
       }
     } catch (e) {
-      console.error('Failed to load reviews from localStorage:', e);
-      setReviews(INITIAL_REVIEWS);
+      console.warn('Failed to load reviews from API:', e);
+      setReviews([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const saveToStorage = (updated) => {
-    setReviews(updated);
+  useEffect(() => {
+    fetchReviews();
+  }, [fetchReviews]);
+
+  const addReview = async (reviewData) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {
-      console.error('Failed to save reviews to localStorage:', e);
+      const res = await reviewsApi.createReview(reviewData);
+      if (res?.data) {
+        const created = res.data.data || res.data;
+        setReviews((prev) => [created, ...prev]);
+        return created;
+      }
+    } catch (err) {
+      console.error('Failed to create review via API:', err);
+      throw err;
     }
   };
 
-  const addReview = (reviewData) => {
-    const newRev = {
-      ...reviewData,
-      id: `rev-${Date.now().toString().slice(-4)}`,
-      rating: Number(reviewData.rating) || 5,
-      status: reviewData.status || 'Approved',
-      featured: Boolean(reviewData.featured),
-      createdAt: new Date().toISOString(),
-    };
-    const updated = [newRev, ...reviews];
-    saveToStorage(updated);
-    return newRev;
-  };
-
-  const updateReview = (id, patchData) => {
-    const updated = reviews.map((item) =>
-      item.id === id ? { ...item, ...patchData } : item
-    );
-    saveToStorage(updated);
+  const updateReview = async (id, patchData) => {
+    try {
+      await reviewsApi.updateReviewStatus(id, patchData);
+      setReviews((prev) =>
+        prev.map((item) => (item.id === id ? { ...item, ...patchData } : item))
+      );
+    } catch (err) {
+      console.error('Failed to update review status via API:', err);
+      throw err;
+    }
   };
 
   const approveReview = (id) => {
@@ -73,9 +71,14 @@ export function ReviewProvider({ children }) {
     }
   };
 
-  const deleteReview = (id) => {
-    const updated = reviews.filter((item) => item.id !== id);
-    saveToStorage(updated);
+  const deleteReview = async (id) => {
+    try {
+      await reviewsApi.deleteReview(id);
+      setReviews((prev) => prev.filter((item) => item.id !== id));
+    } catch (err) {
+      console.error('Failed to delete review via API:', err);
+      throw err;
+    }
   };
 
   const pendingCount = reviews.filter((r) => r.status === 'Pending').length;
@@ -88,6 +91,7 @@ export function ReviewProvider({ children }) {
         loading,
         pendingCount,
         approvedCount,
+        fetchReviews,
         addReview,
         updateReview,
         approveReview,

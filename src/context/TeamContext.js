@@ -1,64 +1,71 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { INITIAL_TEAM } from '@/data/mockData';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { teamApi } from '@/services/api/teamApi';
 
 const TeamContext = createContext();
-
-const STORAGE_KEY = 'jodhpur_voyage_team_v1';
 
 export function TeamProvider({ children }) {
   const [team, setTeam] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchTeam = useCallback(async () => {
+    setLoading(true);
     try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setTeam(JSON.parse(saved));
+      const res = await teamApi.getTeamAdmin();
+      if (res?.data) {
+        setTeam(Array.isArray(res.data) ? res.data : res.data.data || []);
       } else {
-        setTeam(INITIAL_TEAM);
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(INITIAL_TEAM));
+        setTeam([]);
       }
     } catch (e) {
-      console.error('Failed to load team from localStorage:', e);
-      setTeam(INITIAL_TEAM);
+      console.warn('Failed to load team from API:', e);
+      setTeam([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  const saveToStorage = (updated) => {
-    setTeam(updated);
+  useEffect(() => {
+    fetchTeam();
+  }, [fetchTeam]);
+
+  const addMember = async (memberData) => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
-    } catch (e) {
-      console.error('Failed to save team to localStorage:', e);
+      const res = await teamApi.createTeamMember(memberData);
+      if (res?.data) {
+        const created = res.data.data || res.data;
+        setTeam((prev) => [...prev, created]);
+        return created;
+      }
+    } catch (err) {
+      console.error('Failed to add team member via API:', err);
+      throw err;
     }
   };
 
-  const addMember = (memberData) => {
-    const newMember = {
-      ...memberData,
-      id: `team-${Date.now().toString().slice(-4)}`,
-      order: team.length + 1,
-      status: memberData.status || 'Active',
-    };
-    const updated = [...team, newMember];
-    saveToStorage(updated);
-    return newMember;
+  const updateMember = async (id, patchData) => {
+    try {
+      const res = await teamApi.updateTeamMember(id, patchData);
+      if (res?.data) {
+        const updated = res.data.data || res.data;
+        setTeam((prev) => prev.map((item) => (item.id === id ? updated : item)));
+        return updated;
+      }
+    } catch (err) {
+      console.error('Failed to update team member via API:', err);
+      throw err;
+    }
   };
 
-  const updateMember = (id, patchData) => {
-    const updated = team.map((item) =>
-      item.id === id ? { ...item, ...patchData } : item
-    );
-    saveToStorage(updated);
-  };
-
-  const deleteMember = (id) => {
-    const updated = team.filter((item) => item.id !== id);
-    saveToStorage(updated);
+  const deleteMember = async (id) => {
+    try {
+      await teamApi.deleteTeamMember(id);
+      setTeam((prev) => prev.filter((item) => item.id !== id));
+    } catch (err) {
+      console.error('Failed to delete team member via API:', err);
+      throw err;
+    }
   };
 
   return (
@@ -66,6 +73,7 @@ export function TeamProvider({ children }) {
       value={{
         team,
         loading,
+        fetchTeam,
         addMember,
         updateMember,
         deleteMember,
