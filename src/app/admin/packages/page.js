@@ -27,6 +27,8 @@ import {
   ExternalLink,
   ChevronDown,
   ChevronUp,
+  UploadCloud,
+  Image as ImageIcon,
 } from 'lucide-react';
 
 const CATEGORY_TAG_OPTIONS = [
@@ -103,7 +105,7 @@ export default function PackagesManagementPage() {
       exclusions: 'Flight / Train tickets, Personal expenses, Gratuities',
       pdfUrl: 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
       image: '',
-      galleryText: '',
+      gallery: [],
       status: 'Active',
       featured: false,
       itinerary: [
@@ -140,7 +142,7 @@ export default function PackagesManagementPage() {
       exclusions: Array.isArray(pkg.exclusions) ? pkg.exclusions.join(', ') : pkg.exclusions || '',
       pdfUrl: pkg.pdfUrl || '',
       image: pkg.image || '',
-      galleryText: Array.isArray(pkg.gallery) ? pkg.gallery.join('\n') : '',
+      gallery: Array.isArray(pkg.gallery) ? pkg.gallery : (pkg.gallery ? [pkg.gallery] : []),
       status: pkg.status || 'Active',
       featured: Boolean(pkg.featured),
       itinerary: pkg.itinerary && pkg.itinerary.length > 0 ? pkg.itinerary : [
@@ -219,7 +221,9 @@ export default function PackagesManagementPage() {
       ? formData.exclusions.split(',').map((s) => s.trim()).filter(Boolean)
       : [];
 
-    const galleryArray = formData.galleryText
+    const galleryArray = Array.isArray(formData.gallery)
+      ? formData.gallery.filter(Boolean)
+      : formData.galleryText
       ? formData.galleryText.split('\n').map((s) => s.trim()).filter(Boolean)
       : [];
 
@@ -827,35 +831,72 @@ export default function PackagesManagementPage() {
               {/* TAB 4: GALLERY, PDF & SEO */}
               {activeTab === 'media_seo' && (
                 <div className="space-y-4 animate-in fade-in duration-100">
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">
-                      Primary Cover Image URL
-                    </label>
-                    <input
-                      type="text"
-                      value={formData.image}
-                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                      placeholder="https://images.unsplash.com/photo-..."
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
-                    />
-                    {formData.image && (
-                      <div className="mt-2 h-28 w-48 rounded-xl overflow-hidden border border-slate-200">
-                        <img src={formData.image} alt="Preview" className="w-full h-full object-cover" />
-                      </div>
-                    )}
-                  </div>
+                  <ImageUploader
+                    label="Primary Tour Cover Image"
+                    required={true}
+                    value={formData.image}
+                    onChange={(val) => setFormData({ ...formData, image: val })}
+                    helperText="Upload tour cover image from device (PNG, JPG, WEBP)"
+                  />
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">
-                      Gallery Photos (1 URL per line)
+                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                      Tour Gallery Photos
                     </label>
-                    <textarea
-                      rows={3}
-                      value={formData.galleryText}
-                      onChange={(e) => setFormData({ ...formData, galleryText: e.target.value })}
-                      placeholder="https://images.unsplash.com/...&#10;https://images.unsplash.com/..."
-                      className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none font-mono text-[11px]"
-                    />
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-2">
+                      {Array.isArray(formData.gallery) &&
+                        formData.gallery.map((img, idx) => (
+                          <div
+                            key={idx}
+                            className="relative h-24 rounded-xl overflow-hidden border border-slate-200 group bg-slate-100"
+                          >
+                            <img
+                              src={img}
+                              alt={`Gallery ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const updated = formData.gallery.filter((_, i) => i !== idx);
+                                setFormData({ ...formData, gallery: updated });
+                              }}
+                              className="absolute top-1 right-1 p-1 rounded-full bg-rose-600 text-white opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-xs"
+                              title="Remove photo"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+
+                      <label className="border-2 border-dashed border-slate-300 hover:border-amber-500 rounded-xl h-24 flex flex-col items-center justify-center cursor-pointer bg-slate-50 hover:bg-amber-50/50 transition-colors p-2 text-center">
+                        <UploadCloud className="w-5 h-5 text-amber-600 mb-1" />
+                        <span className="text-[10px] font-bold text-slate-700">Add Gallery Photo</span>
+                        <span className="text-[9px] text-slate-400">PNG, JPG up to 10MB</span>
+                        <input
+                          type="file"
+                          multiple
+                          accept="image/*"
+                          className="hidden"
+                          onChange={(e) => {
+                            const files = Array.from(e.target.files || []);
+                            files.forEach((file) => {
+                              const reader = new FileReader();
+                              reader.onload = (ev) => {
+                                const res = ev.target?.result;
+                                if (res) {
+                                  setFormData((prev) => ({
+                                    ...prev,
+                                    gallery: [...(prev.gallery || []), res],
+                                  }));
+                                }
+                              };
+                              reader.readAsDataURL(file);
+                            });
+                          }}
+                        />
+                      </label>
+                    </div>
                   </div>
 
                   <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-1">

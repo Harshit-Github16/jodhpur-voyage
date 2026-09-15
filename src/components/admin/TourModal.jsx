@@ -186,7 +186,7 @@ export function TourModal({ isOpen, onClose, onSave, initialData = null }) {
             required={true}
             value={formData.image}
             onChange={(val) => setFormData({ ...formData, image: val })}
-            helperText="Upload tour image from device or paste image URL"
+            helperText="Upload tour image from device (PNG, JPG, WEBP)"
           />
 
           <div>

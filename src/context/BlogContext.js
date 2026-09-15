@@ -30,7 +30,12 @@ export function BlogProvider({ children }) {
         search: searchQuery || undefined,
       });
       if (res?.data) {
-        setBlogs(Array.isArray(res.data) ? res.data : res.data.data || []);
+        const rawList = Array.isArray(res.data) ? res.data : (res.data.data || res.data.blogs || []);
+        const normalized = rawList.map((b) => ({
+          ...b,
+          id: b.id || b._id,
+        }));
+        setBlogs(normalized);
       } else {
         setBlogs([]);
       }
@@ -53,9 +58,10 @@ export function BlogProvider({ children }) {
         const res = await blogsApi.createBlog(blogData);
         if (res?.data) {
           const created = res.data.data || res.data;
-          setBlogs((prev) => [created, ...prev]);
+          const normalized = { ...created, id: created.id || created._id };
+          setBlogs((prev) => [normalized, ...prev]);
           adminContext?.addToast(`Blog published successfully!`, 'success');
-          return { success: true, data: created };
+          return { success: true, data: normalized };
         }
         return { success: false, message: res?.message || 'Failed to publish blog' };
       } catch (err) {
@@ -72,9 +78,10 @@ export function BlogProvider({ children }) {
         const res = await blogsApi.updateBlog(id, updateFields);
         if (res?.data) {
           const updated = res.data.data || res.data;
-          setBlogs((prev) => prev.map((b) => (b.id === id ? updated : b)));
+          const normalized = { ...updated, id: updated.id || updated._id };
+          setBlogs((prev) => prev.map((b) => ((b.id || b._id) === id ? normalized : b)));
           adminContext?.addToast('Blog updated successfully', 'success');
-          return { success: true, data: updated };
+          return { success: true, data: normalized };
         }
         return { success: false, message: res?.message || 'Update failed' };
       } catch (err) {
@@ -89,7 +96,7 @@ export function BlogProvider({ children }) {
     async (id) => {
       try {
         const res = await blogsApi.deleteBlog(id);
-        setBlogs((prev) => prev.filter((b) => b.id !== id));
+        setBlogs((prev) => prev.filter((b) => (b.id || b._id) !== id));
         adminContext?.addToast('Blog post deleted', 'info');
         return { success: true, data: res };
       } catch (err) {

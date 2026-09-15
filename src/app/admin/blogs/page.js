@@ -53,6 +53,23 @@ export default function BlogsManagementPage() {
     featured: false,
   });
 
+  // Helper functions for author resolution
+  const getAuthorName = (author) => {
+    if (!author) return 'Admin';
+    if (typeof author === 'object') return author.name || 'Admin';
+    return String(author);
+  };
+
+  const getAuthorRole = (author, authorRole) => {
+    if (typeof author === 'object' && author?.role) return author.role;
+    return authorRole || 'Travel Curator';
+  };
+
+  const getAuthorAvatar = (author, authorAvatar) => {
+    if (typeof author === 'object' && author?.avatar) return author.avatar;
+    return authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80';
+  };
+
   const openAddModal = () => {
     setEditingBlog(null);
     setFormData({
@@ -80,11 +97,11 @@ export default function BlogsManagementPage() {
       category: blog.category || 'Travel Guide',
       excerpt: blog.excerpt || '',
       content: blog.content || '',
-      author: blog.author || 'Admin',
-      authorRole: blog.authorRole || 'Editor',
+      author: getAuthorName(blog.author),
+      authorRole: getAuthorRole(blog.author, blog.authorRole),
       coverImage: blog.coverImage || '',
       readTime: blog.readTime || '5 min read',
-      tags: Array.isArray(blog.tags) ? blog.tags.join(', ') : '',
+      tags: Array.isArray(blog.tags) ? blog.tags.join(', ') : (blog.tags || ''),
       status: blog.status || 'Published',
       featured: Boolean(blog.featured),
     });
@@ -94,15 +111,26 @@ export default function BlogsManagementPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    const authorAvatar =
+      (editingBlog && typeof editingBlog.author === 'object' ? editingBlog.author.avatar : null) ||
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80';
+
     const payload = {
       ...formData,
+      author: {
+        name: formData.author,
+        role: formData.authorRole,
+        avatar: authorAvatar,
+      },
       tags: formData.tags
-        ? formData.tags.split(',').map((t) => t.trim()).filter(Boolean)
+        ? (Array.isArray(formData.tags)
+            ? formData.tags
+            : formData.tags.split(',').map((t) => t.trim()).filter(Boolean))
         : [],
     };
 
     if (editingBlog) {
-      await updateBlog(editingBlog.id, payload);
+      await updateBlog(editingBlog.id || editingBlog._id, payload);
     } else {
       await addBlog(payload);
     }
@@ -181,117 +209,122 @@ export default function BlogsManagementPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {blogs.map((blog) => (
-            <div
-              key={blog.id}
-              className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between"
-            >
-              {/* Cover Image */}
-              <div className="relative h-48 w-full bg-slate-100">
-                <img
-                  src={blog.coverImage || 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80'}
-                  alt={blog.title}
-                  className="w-full h-full object-cover"
-                />
-                <div className="absolute top-3 left-3 flex items-center gap-1.5">
-                  <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#0f172a]/90 text-white shadow-sm">
-                    {blog.category}
-                  </span>
-                  {blog.featured && (
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500 text-white shadow-2xs">
-                      Featured
+          {blogs.map((blog) => {
+            const blogId = blog.id || blog._id;
+            const authorName = getAuthorName(blog.author);
+            const authorAvatar = getAuthorAvatar(blog.author, blog.authorAvatar);
+            return (
+              <div
+                key={blogId}
+                className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-xs hover:border-slate-300 transition-all flex flex-col justify-between"
+              >
+                {/* Cover Image */}
+                <div className="relative h-48 w-full bg-slate-100">
+                  <img
+                    src={blog.coverImage || 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80'}
+                    alt={blog.title}
+                    className="w-full h-full object-cover"
+                  />
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                    <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#0f172a]/90 text-white shadow-sm">
+                      {blog.category}
                     </span>
-                  )}
-                </div>
-
-                <div className="absolute top-3 right-3">
-                  <span
-                    className={`px-2 py-0.5 rounded text-[10px] font-bold ${blog.status === 'Published'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-slate-100 text-slate-700'
-                      }`}
-                  >
-                    {blog.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* Article Content */}
-              <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-3 text-[11px] text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3 text-slate-400" />
-                      {blog.publishedAt?.slice(0, 10) || '2026-09-08'}
-                    </span>
-                    <span>•</span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-slate-400" />
-                      {blog.readTime || '5 min'}
-                    </span>
+                    {blog.featured && (
+                      <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500 text-white shadow-2xs">
+                        Featured
+                      </span>
+                    )}
                   </div>
 
-                  <h3 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2">
-                    {blog.title}
-                  </h3>
+                  <div className="absolute top-3 right-3">
+                    <span
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${blog.status === 'Published'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : 'bg-slate-100 text-slate-700'
+                        }`}
+                    >
+                      {blog.status}
+                    </span>
+                  </div>
+                </div>
 
-                  <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                    {blog.excerpt}
-                  </p>
-
-                  {/* Tags */}
-                  {blog.tags && blog.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 pt-1">
-                      {blog.tags.slice(0, 3).map((t, i) => (
-                        <span
-                          key={i}
-                          className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium border border-slate-200"
-                        >
-                          #{t}
-                        </span>
-                      ))}
+                {/* Article Content */}
+                <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-3 text-[11px] text-slate-400">
+                      <span className="flex items-center gap-1">
+                        <Calendar className="w-3 h-3 text-slate-400" />
+                        {blog.publishedAt?.slice(0, 10) || blog.createdAt?.slice(0, 10) || '2026-09-08'}
+                      </span>
+                      <span>•</span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3 text-slate-400" />
+                        {blog.readTime || '5 min'}
+                      </span>
                     </div>
-                  )}
-                </div>
 
-                {/* Author & Actions footer */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={blog.authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'}
-                      alt={blog.author}
-                      className="w-6 h-6 rounded-full object-cover border border-slate-200"
-                    />
-                    <span className="text-[11px] font-bold text-slate-800">{blog.author}</span>
+                    <h3 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2">
+                      {blog.title}
+                    </h3>
+
+                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
+                      {blog.excerpt}
+                    </p>
+
+                    {/* Tags */}
+                    {blog.tags && blog.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 pt-1">
+                        {(Array.isArray(blog.tags) ? blog.tags : [blog.tags]).slice(0, 3).map((t, i) => (
+                          <span
+                            key={i}
+                            className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium border border-slate-200"
+                          >
+                            #{t}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="flex items-center gap-1">
-                    <button
-                      onClick={() => setPreviewBlog(blog)}
-                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-                      title="Preview Article"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => openEditModal(blog)}
-                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-                      title="Edit Article"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => deleteBlog(blog.id)}
-                      className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 transition-colors"
-                      title="Delete Article"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                  {/* Author & Actions footer */}
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <img
+                        src={authorAvatar}
+                        alt={authorName}
+                        className="w-6 h-6 rounded-full object-cover border border-slate-200"
+                      />
+                      <span className="text-[11px] font-bold text-slate-800">{authorName}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => setPreviewBlog(blog)}
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                        title="Preview Article"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => openEditModal(blog)}
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                        title="Edit Article"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => deleteBlog(blogId)}
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 transition-colors"
+                        title="Delete Article"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -403,7 +436,7 @@ export default function BlogsManagementPage() {
                 required={true}
                 value={formData.coverImage}
                 onChange={(val) => setFormData({ ...formData, coverImage: val })}
-                helperText="Upload image from device or paste image URL"
+                helperText="Upload image file from device (PNG, JPG, WEBP)"
               />
 
               <div>
@@ -547,11 +580,11 @@ export default function BlogsManagementPage() {
               </h2>
 
               <div className="flex items-center gap-3 text-xs text-slate-500 py-2 border-y border-slate-100">
-                <span className="font-bold text-slate-800">By {previewBlog.author}</span>
+                <span className="font-bold text-slate-800">By {getAuthorName(previewBlog.author)}</span>
                 <span>•</span>
                 <span>{previewBlog.readTime}</span>
                 <span>•</span>
-                <span>{previewBlog.publishedAt?.slice(0, 10)}</span>
+                <span>{previewBlog.publishedAt?.slice(0, 10) || previewBlog.createdAt?.slice(0, 10) || '2026-09-08'}</span>
               </div>
 
               <div className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">

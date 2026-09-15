@@ -577,6 +577,13 @@ export default function CreateCityPage() {
                   />
                 </div>
 
+                <ImageUploader
+                  label="Category Cover Image"
+                  value={categoryFormData.coverImage}
+                  onChange={(val) => setCategoryFormData({ ...categoryFormData, coverImage: val })}
+                  helperText="Upload category card image from device (PNG, JPG, WEBP)"
+                />
+
                 <div className="flex items-center justify-end gap-2 pt-2">
                   <button
                     type="submit"
@@ -824,7 +831,7 @@ export default function CreateCityPage() {
                 required={true}
                 value={formData.bannerImage}
                 onChange={(val) => setFormData({ ...formData, bannerImage: val })}
-                helperText="Upload banner image from device or paste image URL"
+                helperText="Upload banner image from device (PNG, JPG, WEBP)"
               />
 
               <div>

@@ -72,6 +72,25 @@ export default function EnquiriesManagementPage() {
     return matchesTab && matchesSearch;
   });
 
+  const formatStaffNotes = (notes) => {
+    if (!notes) return '';
+    if (typeof notes === 'string') return notes;
+    if (Array.isArray(notes)) {
+      return notes
+        .map((n) => {
+          if (typeof n === 'string') return n;
+          if (n && typeof n === 'object') return n.note || n.text || n.message || '';
+          return '';
+        })
+        .filter(Boolean)
+        .join(' | ');
+    }
+    if (typeof notes === 'object') {
+      return notes.note || notes.text || notes.message || '';
+    }
+    return String(notes);
+  };
+
   const handleWhatsAppChat = (lead) => {
     const cleanPhone = (lead.phone || '').replace(/[^0-9]/g, '');
     const message = encodeURIComponent(
@@ -84,13 +103,13 @@ export default function EnquiriesManagementPage() {
 
   const handleOpenNotes = (item) => {
     setSelectedEnquiry(item);
-    setNotesText(item.notes || '');
+    setNotesText(formatStaffNotes(item.notes));
     setIsNotesModalOpen(true);
   };
 
   const handleSaveNotes = () => {
     if (selectedEnquiry) {
-      updateNotes(selectedEnquiry.id, notesText);
+      updateNotes(selectedEnquiry.id || selectedEnquiry._id, notesText);
       setIsNotesModalOpen(false);
       setSelectedEnquiry(null);
     }
@@ -252,124 +271,128 @@ export default function EnquiriesManagementPage() {
                   </td>
                 </tr>
               ) : (
-                filteredEnquiries.map((lead) => (
-                  <tr key={lead.id} className="hover:bg-slate-50/70 transition-colors">
-                    <td className="py-3 px-4 align-top">
-                      <div className="font-mono font-bold text-slate-900">{lead.id}</div>
-                      <div className="text-[10px] text-slate-400 mt-0.5">
-                        {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : 'Recent'}
-                      </div>
-                      <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded font-semibold mt-1 inline-block">
-                        {lead.source || 'Form'}
-                      </span>
-                    </td>
-
-                    <td className="py-3 px-4 align-top">
-                      <div className="font-bold text-slate-900">{lead.name}</div>
-                      <div className="text-[11px] text-slate-600 flex items-center gap-1 mt-0.5">
-                        <Phone className="w-3 h-3 text-slate-400" />
-                        <span>{lead.phone}</span>
-                      </div>
-                      {lead.email && (
-                        <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
-                          <Mail className="w-3 h-3 text-slate-400" />
-                          <span className="truncate max-w-[140px]">{lead.email}</span>
+                filteredEnquiries.map((lead) => {
+                  const leadId = lead.id || lead._id;
+                  const staffNotes = formatStaffNotes(lead.notes);
+                  return (
+                    <tr key={leadId} className="hover:bg-slate-50/70 transition-colors">
+                      <td className="py-3 px-4 align-top">
+                        <div className="font-mono font-bold text-slate-900">{leadId}</div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">
+                          {lead.createdAt ? new Date(lead.createdAt).toLocaleDateString() : 'Recent'}
                         </div>
-                      )}
-                    </td>
+                        <span className="text-[9px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded font-semibold mt-1 inline-block">
+                          {lead.source || 'Form'}
+                        </span>
+                      </td>
 
-                    <td className="py-3 px-4 align-top max-w-[180px]">
-                      <div className="font-semibold text-slate-900 line-clamp-1">
-                        {lead.packageInterest || lead.destination}
-                      </div>
-                      <div className="text-[11px] text-slate-500 mt-0.5">
-                        {lead.travelers} Guests • Date: {lead.preferredDate || 'Flexible'}
-                      </div>
-                      {lead.budget && (
-                        <div className="text-[10px] text-amber-700 font-bold mt-0.5">
-                          Budget: {lead.budget}
+                      <td className="py-3 px-4 align-top">
+                        <div className="font-bold text-slate-900">{lead.name}</div>
+                        <div className="text-[11px] text-slate-600 flex items-center gap-1 mt-0.5">
+                          <Phone className="w-3 h-3 text-slate-400" />
+                          <span>{lead.phone}</span>
                         </div>
-                      )}
-                    </td>
-
-                    <td className="py-3 px-4 align-top max-w-[220px]">
-                      <p className="text-slate-600 line-clamp-2 italic">
-                        "{lead.message || 'No custom message provided.'}"
-                      </p>
-                      {lead.notes && (
-                        <div className="mt-1.5 p-1.5 bg-amber-50 rounded-lg border border-amber-200/60 text-[10px] text-amber-900 font-medium">
-                          <strong>Staff Note:</strong> {lead.notes}
-                        </div>
-                      )}
-                    </td>
-
-                    <td className="py-3 px-4 align-top">
-                      <select
-                        value={lead.status}
-                        onChange={(e) => updateStatus(lead.id, e.target.value)}
-                        className={`text-[11px] font-bold px-2.5 py-1.5 rounded-xl border focus:outline-none cursor-pointer ${
-                          lead.status === 'New'
-                            ? 'bg-amber-100 text-amber-900 border-amber-300'
-                            : lead.status === 'Contacted'
-                            ? 'bg-blue-100 text-blue-900 border-blue-300'
-                            : lead.status === 'Converted'
-                            ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
-                            : 'bg-slate-100 text-slate-700 border-slate-200'
-                        }`}
-                      >
-                        <option value="New">🟡 New Lead</option>
-                        <option value="Contacted">🔵 Contacted</option>
-                        <option value="Converted">🟢 Converted / Paid</option>
-                        <option value="Closed">⚪ Closed / Archived</option>
-                      </select>
-                    </td>
-
-                    <td className="py-3 px-4 align-top text-center">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          onClick={() => handleWhatsAppChat(lead)}
-                          className="px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px] flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
-                          title="Open WhatsApp Chat"
-                        >
-                          <Send className="w-3 h-3" />
-                          <span>WhatsApp</span>
-                        </button>
                         {lead.email && (
-                          <a
-                            href={`mailto:${lead.email}?subject=Regarding Your Rajasthan Tour Inquiry - Jodhpur Voyage&body=Dear ${lead.name},%0D%0A%0D%0AThank you for contacting Jodhpur Voyage.`}
-                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
-                            title="Send Direct Email"
-                          >
-                            <Mail className="w-3.5 h-3.5" />
-                          </a>
+                          <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-0.5">
+                            <Mail className="w-3 h-3 text-slate-400" />
+                            <span className="truncate max-w-[140px]">{lead.email}</span>
+                          </div>
                         )}
-                      </div>
-                    </td>
+                      </td>
 
-                    <td className="py-3 px-4 align-top text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <button
-                          onClick={() => handleOpenNotes(lead)}
-                          className="p-1.5 rounded-lg bg-slate-100 hover:bg-amber-50 hover:text-amber-800 text-slate-700 transition-colors cursor-pointer"
-                          title="Edit Staff Notes"
+                      <td className="py-3 px-4 align-top max-w-[180px]">
+                        <div className="font-semibold text-slate-900 line-clamp-1">
+                          {lead.packageInterest || lead.destination}
+                        </div>
+                        <div className="text-[11px] text-slate-500 mt-0.5">
+                          {lead.travelers} Guests • Date: {lead.preferredDate || 'Flexible'}
+                        </div>
+                        {lead.budget && (
+                          <div className="text-[10px] text-amber-700 font-bold mt-0.5">
+                            Budget: {lead.budget}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4 align-top max-w-[220px]">
+                        <p className="text-slate-600 line-clamp-2 italic">
+                          "{lead.message || 'No custom message provided.'}"
+                        </p>
+                        {staffNotes && (
+                          <div className="mt-1.5 p-1.5 bg-amber-50 rounded-lg border border-amber-200/60 text-[10px] text-amber-900 font-medium">
+                            <strong>Staff Note:</strong> {staffNotes}
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="py-3 px-4 align-top">
+                        <select
+                          value={lead.status}
+                          onChange={(e) => updateStatus(leadId, e.target.value)}
+                          className={`text-[11px] font-bold px-2.5 py-1.5 rounded-xl border focus:outline-none cursor-pointer ${
+                            lead.status === 'New'
+                              ? 'bg-amber-100 text-amber-900 border-amber-300'
+                              : lead.status === 'Contacted'
+                              ? 'bg-blue-100 text-blue-900 border-blue-300'
+                              : lead.status === 'Converted'
+                              ? 'bg-emerald-100 text-emerald-900 border-emerald-300'
+                              : 'bg-slate-100 text-slate-700 border-slate-200'
+                          }`}
                         >
-                          <Edit3 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm(`Delete inquiry from ${lead.name}?`)) {
-                              deleteEnquiry(lead.id);
-                            }
-                          }}
-                          className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
-                          title="Delete Lead"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
+                          <option value="New">🟡 New Lead</option>
+                          <option value="Contacted">🔵 Contacted</option>
+                          <option value="Converted">🟢 Converted / Paid</option>
+                          <option value="Closed">⚪ Closed / Archived</option>
+                        </select>
+                      </td>
+
+                      <td className="py-3 px-4 align-top text-center">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <button
+                            onClick={() => handleWhatsAppChat(lead)}
+                            className="px-2.5 py-1.5 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white font-bold text-[11px] flex items-center gap-1 transition-all shadow-2xs cursor-pointer"
+                            title="Open WhatsApp Chat"
+                          >
+                            <Send className="w-3 h-3" />
+                            <span>WhatsApp</span>
+                          </button>
+                          {lead.email && (
+                            <a
+                              href={`mailto:${lead.email}?subject=Regarding Your Rajasthan Tour Inquiry - Jodhpur Voyage&body=Dear ${lead.name},%0D%0A%0D%0AThank you for contacting Jodhpur Voyage.`}
+                              className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                              title="Send Direct Email"
+                            >
+                              <Mail className="w-3.5 h-3.5" />
+                            </a>
+                          )}
+                        </div>
+                      </td>
+
+                      <td className="py-3 px-4 align-top text-right">
+                        <div className="flex items-center justify-end gap-1">
+                          <button
+                            onClick={() => handleOpenNotes(lead)}
+                            className="p-1.5 rounded-lg bg-slate-100 hover:bg-amber-50 hover:text-amber-800 text-slate-700 transition-colors cursor-pointer"
+                            title="Edit Staff Notes"
+                          >
+                            <Edit3 className="w-3.5 h-3.5" />
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (confirm(`Delete inquiry from ${lead.name}?`)) {
+                                deleteEnquiry(leadId);
+                              }
+                            }}
+                            className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 transition-colors cursor-pointer"
+                            title="Delete Lead"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

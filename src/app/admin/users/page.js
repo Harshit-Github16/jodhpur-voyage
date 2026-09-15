@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import ImageUploader from '@/components/common/ImageUploader';
 import {
   ShieldCheck,
   UserPlus,
@@ -355,6 +356,13 @@ export default function UsersAndRolesPage() {
                   className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
                 />
               </div>
+
+              <ImageUploader
+                label="Staff Profile Picture / Avatar"
+                value={formData.avatar}
+                onChange={(val) => setFormData({ ...formData, avatar: val })}
+                helperText="Upload profile photo from device (PNG, JPG, WEBP)"
+              />
 
               <div>
                 <label className="text-xs font-bold text-slate-700 block mb-1">Assigned Role</label>

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useSettings } from '@/context/SettingsContext';
+import ImageUploader from '@/components/common/ImageUploader';
 import {
   Settings,
   Globe,
@@ -153,26 +154,20 @@ export default function GeneralSettingsPage() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Site Logo Path / URL
-                </label>
-                <input
-                  type="text"
+                <ImageUploader
+                  label="Site Logo (Header & Navbar)"
                   value={formData.logoUrl}
-                  onChange={(e) => handleChange('logoUrl', e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                  onChange={(val) => handleChange('logoUrl', val)}
+                  helperText="Upload transparent PNG, SVG or WEBP site logo"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
-                  Favicon Path / URL
-                </label>
-                <input
-                  type="text"
+                <ImageUploader
+                  label="Favicon / App Icon"
                   value={formData.faviconUrl}
-                  onChange={(e) => handleChange('faviconUrl', e.target.value)}
-                  className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                  onChange={(val) => handleChange('faviconUrl', val)}
+                  helperText="Upload favicon image (PNG, ICO, WEBP)"
                 />
               </div>
 

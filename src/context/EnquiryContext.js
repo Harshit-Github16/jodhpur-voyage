@@ -19,7 +19,12 @@ export function EnquiryProvider({ children }) {
         status: statusFilter !== 'All' ? statusFilter : undefined,
       });
       if (res?.data) {
-        setEnquiries(Array.isArray(res.data) ? res.data : res.data.data || []);
+        const rawList = Array.isArray(res.data) ? res.data : (res.data.data || res.data.enquiries || []);
+        const normalized = rawList.map((item) => ({
+          ...item,
+          id: item.id || item._id,
+        }));
+        setEnquiries(normalized);
       } else {
         setEnquiries([]);
       }
@@ -40,8 +45,9 @@ export function EnquiryProvider({ children }) {
       const res = await enquiriesApi.createEnquiry(newEnq);
       if (res?.data) {
         const created = res.data.data || res.data;
-        setEnquiries((prev) => [created, ...prev]);
-        return created;
+        const normalized = { ...created, id: created.id || created._id };
+        setEnquiries((prev) => [normalized, ...prev]);
+        return normalized;
       }
     } catch (err) {
       console.error('Failed to submit enquiry via API:', err);
@@ -54,7 +60,9 @@ export function EnquiryProvider({ children }) {
       await enquiriesApi.updateEnquiryStatus(id, { status: newStatus, note });
       setEnquiries((prev) =>
         prev.map((item) =>
-          item.id === id ? { ...item, status: newStatus, ...(note ? { notes: note } : {}) } : item
+          (item.id === id || item._id === id)
+            ? { ...item, status: newStatus, ...(note ? { notes: note } : {}) }
+            : item
         )
       );
     } catch (err) {
@@ -67,7 +75,7 @@ export function EnquiryProvider({ children }) {
     try {
       await enquiriesApi.updateEnquiryStatus(id, { note: notes });
       setEnquiries((prev) =>
-        prev.map((item) => (item.id === id ? { ...item, notes } : item))
+        prev.map((item) => ((item.id === id || item._id === id) ? { ...item, notes } : item))
       );
     } catch (err) {
       console.error('Failed to update enquiry note via API:', err);
@@ -77,14 +85,14 @@ export function EnquiryProvider({ children }) {
 
   const updateEnquiry = (id, patchData) => {
     setEnquiries((prev) =>
-      prev.map((item) => (item.id === id ? { ...item, ...patchData } : item))
+      prev.map((item) => ((item.id === id || item._id === id) ? { ...item, ...patchData } : item))
     );
   };
 
   const deleteEnquiry = async (id) => {
     try {
       await enquiriesApi.deleteEnquiry(id);
-      setEnquiries((prev) => prev.filter((item) => item.id !== id));
+      setEnquiries((prev) => prev.filter((item) => item.id !== id && item._id !== id));
     } catch (err) {
       console.error('Failed to delete enquiry via API:', err);
       throw err;
@@ -110,6 +118,21 @@ export function EnquiryProvider({ children }) {
       'Notes',
     ];
 
+    const formatNotesForExport = (notes) => {
+      if (!notes) return '';
+      if (typeof notes === 'string') return notes;
+      if (Array.isArray(notes)) {
+        return notes
+          .map((n) => (typeof n === 'object' ? n.note || n.text || n.message || '' : String(n)))
+          .filter(Boolean)
+          .join(' | ');
+      }
+      if (typeof notes === 'object') {
+        return notes.note || notes.text || notes.message || '';
+      }
+      return String(notes);
+    };
+
     const rows = filteredList.map((e) => [
       `"${e.id}"`,
       `"${e.name || ''}"`,
@@ -124,7 +147,7 @@ export function EnquiryProvider({ children }) {
       `"${e.source || 'Website'}"`,
       `"${e.createdAt || ''}"`,
       `"${(e.message || '').replace(/"/g, '""')}"`,
-      `"${(e.notes || '').replace(/"/g, '""')}"`,
+      `"${formatNotesForExport(e.notes).replace(/"/g, '""')}"`,
     ]);
 
     const csvContent =

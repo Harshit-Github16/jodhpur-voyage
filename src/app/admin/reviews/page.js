@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useReviews } from '@/context/ReviewContext';
 import { useTours } from '@/context/TourContext';
+import ImageUploader from '@/components/common/ImageUploader';
 import {
   Star,
   CheckCircle2,
@@ -55,14 +56,72 @@ export default function ReviewsManagementPage() {
     featured: true,
   });
 
+  // Helper functions for review normalization
+  const getCustomerName = (rev) => {
+    if (!rev) return 'Anonymous Guest';
+    return (
+      rev.customerName ||
+      rev.authorName ||
+      rev.userName ||
+      (typeof rev.user === 'object' && rev.user !== null ? rev.user.name : '') ||
+      rev.name ||
+      'Anonymous Guest'
+    );
+  };
+
+  const getCustomerInitials = (rev) => {
+    const name = getCustomerName(rev);
+    return (name || 'GU').slice(0, 2).toUpperCase();
+  };
+
+  const getCustomerLocation = (rev) => {
+    if (!rev) return 'Verified Guest';
+    return (
+      rev.customerLocation ||
+      rev.authorLocation ||
+      rev.location ||
+      (typeof rev.user === 'object' && rev.user !== null ? rev.user.location : '') ||
+      'Verified Guest'
+    );
+  };
+
+  const getCustomerAvatar = (rev) => {
+    if (!rev) return '';
+    return (
+      rev.customerAvatar ||
+      rev.authorAvatar ||
+      rev.avatar ||
+      (typeof rev.user === 'object' && rev.user !== null ? rev.user.avatar : '') ||
+      ''
+    );
+  };
+
+  const getPackageTitle = (rev) => {
+    if (!rev) return 'Heritage Tour';
+    return (
+      rev.packageTitle ||
+      rev.tourTitle ||
+      (typeof rev.tourId === 'object' && rev.tourId !== null ? rev.tourId.title : '') ||
+      (typeof rev.tour === 'object' && rev.tour !== null ? rev.tour.title : '') ||
+      rev.tourName ||
+      'Heritage Tour'
+    );
+  };
+
   const filteredReviews = reviews.filter((item) => {
     const matchesTab = activeTab === 'All' || item.status === activeTab;
     const q = searchQuery.toLowerCase();
+    const name = getCustomerName(item).toLowerCase();
+    const location = getCustomerLocation(item).toLowerCase();
+    const pkg = getPackageTitle(item).toLowerCase();
+    const comment = (item.comment || '').toLowerCase();
+    const title = (item.title || '').toLowerCase();
     const matchesSearch =
-      (item.customerName || '').toLowerCase().includes(q) ||
-      (item.customerLocation || '').toLowerCase().includes(q) ||
-      (item.packageTitle || '').toLowerCase().includes(q) ||
-      (item.comment || '').toLowerCase().includes(q);
+      name.includes(q) ||
+      location.includes(q) ||
+      pkg.includes(q) ||
+      comment.includes(q) ||
+      title.includes(q);
     return matchesTab && matchesSearch;
   });
 
@@ -86,10 +145,10 @@ export default function ReviewsManagementPage() {
   const openEditModal = (rev) => {
     setEditingReview(rev);
     setFormData({
-      customerName: rev.customerName || '',
-      customerLocation: rev.customerLocation || '',
-      customerAvatar: rev.customerAvatar || '',
-      packageTitle: rev.packageTitle || '',
+      customerName: getCustomerName(rev),
+      customerLocation: getCustomerLocation(rev),
+      customerAvatar: getCustomerAvatar(rev),
+      packageTitle: getPackageTitle(rev),
       rating: rev.rating || 5,
       title: rev.title || '',
       comment: rev.comment || '',
@@ -108,7 +167,7 @@ export default function ReviewsManagementPage() {
     }
 
     if (editingReview) {
-      updateReview(editingReview.id, formData);
+      updateReview(editingReview.id || editingReview._id, formData);
     } else {
       addReview(formData);
     }
@@ -176,152 +235,161 @@ export default function ReviewsManagementPage() {
 
       {/* Reviews Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filteredReviews.map((rev) => (
-          <div
-            key={rev.id}
-            className={`bg-white rounded-xl border p-4.5 shadow-sm flex flex-col justify-between space-y-3.5 transition-all hover:shadow-md ${
-              rev.status === 'Pending'
-                ? 'border-amber-300 bg-amber-50/20'
-                : rev.status === 'Rejected'
-                ? 'border-rose-200 opacity-60'
-                : 'border-slate-200/80'
-            }`}
-          >
-            <div className="space-y-3">
-              {/* Header with guest info & status */}
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex items-center gap-2.5">
-                  {rev.customerAvatar ? (
-                    <img
-                      src={rev.customerAvatar}
-                      alt={rev.customerName}
-                      className="w-10 h-10 rounded-full object-cover border border-slate-200"
-                    />
-                  ) : (
-                    <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-900 font-bold text-xs flex items-center justify-center">
-                      {rev.customerName.slice(0, 2).toUpperCase()}
+        {filteredReviews.map((rev) => {
+          const revId = rev.id || rev._id;
+          const name = getCustomerName(rev);
+          const location = getCustomerLocation(rev);
+          const avatar = getCustomerAvatar(rev);
+          const initials = getCustomerInitials(rev);
+          const packageTitle = getPackageTitle(rev);
+
+          return (
+            <div
+              key={revId}
+              className={`bg-white rounded-xl border p-4.5 shadow-sm flex flex-col justify-between space-y-3.5 transition-all hover:shadow-md ${
+                rev.status === 'Pending'
+                  ? 'border-amber-300 bg-amber-50/20'
+                  : rev.status === 'Rejected'
+                  ? 'border-rose-200 opacity-60'
+                  : 'border-slate-200/80'
+              }`}
+            >
+              <div className="space-y-3">
+                {/* Header with guest info & status */}
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    {avatar ? (
+                      <img
+                        src={avatar}
+                        alt={name}
+                        className="w-10 h-10 rounded-full object-cover border border-slate-200"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-900 font-bold text-xs flex items-center justify-center">
+                        {initials}
+                      </div>
+                    )}
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-900">{name}</h4>
+                      <p className="text-[10px] text-slate-400 flex items-center gap-1">
+                        <MapPin className="w-2.5 h-2.5" />
+                        <span>{location}</span>
+                      </p>
                     </div>
-                  )}
-                  <div>
-                    <h4 className="text-xs font-bold text-slate-900">{rev.customerName}</h4>
-                    <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                      <MapPin className="w-2.5 h-2.5" />
-                      <span>{rev.customerLocation || 'Verified Guest'}</span>
-                    </p>
+                  </div>
+
+                  <div className="flex flex-col items-end gap-1">
+                    <span
+                      className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
+                        rev.status === 'Approved'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : rev.status === 'Pending'
+                          ? 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
+                          : 'bg-rose-100 text-rose-800'
+                      }`}
+                    >
+                      {rev.status || 'Approved'}
+                    </span>
+                    {rev.featured && (
+                      <span className="text-[9px] font-bold text-amber-700 flex items-center gap-0.5">
+                        <Sparkles className="w-2.5 h-2.5" /> Featured
+                      </span>
+                    )}
                   </div>
                 </div>
 
-                <div className="flex flex-col items-end gap-1">
-                  <span
-                    className={`text-[9px] font-bold px-2 py-0.5 rounded-full ${
-                      rev.status === 'Approved'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : rev.status === 'Pending'
-                        ? 'bg-amber-100 text-amber-900 border border-amber-300 animate-pulse'
-                        : 'bg-rose-100 text-rose-800'
-                    }`}
-                  >
-                    {rev.status}
+                {/* Rating stars */}
+                <div className="flex items-center gap-1">
+                  {Array.from({ length: 5 }).map((_, i) => (
+                    <Star
+                      key={i}
+                      className={`w-3.5 h-3.5 ${
+                        i < (rev.rating || 5)
+                          ? 'fill-amber-400 text-amber-400'
+                          : 'text-slate-200'
+                      }`}
+                    />
+                  ))}
+                  <span className="text-[11px] font-bold text-slate-700 ml-1">
+                    {rev.rating || 5}.0 / 5.0
                   </span>
-                  {rev.featured && (
-                    <span className="text-[9px] font-bold text-amber-700 flex items-center gap-0.5">
-                      <Sparkles className="w-2.5 h-2.5" /> Featured
-                    </span>
+                </div>
+
+                {/* Package Tag */}
+                <div className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/80 truncate">
+                  Tour: {packageTitle}
+                </div>
+
+                {/* Title & Comment */}
+                <div>
+                  {rev.title && (
+                    <h5 className="text-xs font-bold text-slate-900 line-clamp-1 mb-1">
+                      "{rev.title}"
+                    </h5>
                   )}
+                  <p className="text-xs text-slate-600 italic line-clamp-4 leading-relaxed">
+                    "{rev.comment || 'No comment provided.'}"
+                  </p>
                 </div>
               </div>
 
-              {/* Rating stars */}
-              <div className="flex items-center gap-1">
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <Star
-                    key={i}
-                    className={`w-3.5 h-3.5 ${
-                      i < rev.rating
-                        ? 'fill-amber-400 text-amber-400'
-                        : 'text-slate-200'
+              {/* Actions Bar */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
+                <div className="flex items-center gap-1">
+                  {rev.status !== 'Approved' && (
+                    <button
+                      onClick={() => approveReview(revId)}
+                      className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                    >
+                      <CheckCircle2 className="w-3 h-3" />
+                      <span>Approve</span>
+                    </button>
+                  )}
+                  {rev.status === 'Pending' && (
+                    <button
+                      onClick={() => rejectReview(revId)}
+                      className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 text-[11px] font-semibold transition-colors cursor-pointer"
+                    >
+                      Reject
+                    </button>
+                  )}
+                  <button
+                    onClick={() => toggleFeatured(revId)}
+                    className={`p-1.5 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer ${
+                      rev.featured
+                        ? 'bg-amber-100 text-amber-900 border border-amber-300'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                     }`}
-                  />
-                ))}
-                <span className="text-[11px] font-bold text-slate-700 ml-1">
-                  {rev.rating}.0 / 5.0
-                </span>
-              </div>
+                    title="Toggle Homepage Feature"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                  </button>
+                </div>
 
-              {/* Package Tag */}
-              <div className="text-[11px] font-semibold text-amber-800 bg-amber-50 px-2 py-1 rounded-lg border border-amber-200/80 truncate">
-                Tour: {rev.packageTitle}
-              </div>
-
-              {/* Title & Comment */}
-              <div>
-                {rev.title && (
-                  <h5 className="text-xs font-bold text-slate-900 line-clamp-1 mb-1">
-                    "{rev.title}"
-                  </h5>
-                )}
-                <p className="text-xs text-slate-600 italic line-clamp-4 leading-relaxed">
-                  "{rev.comment}"
-                </p>
+                <div className="flex items-center gap-1">
+                  <button
+                    onClick={() => openEditModal(rev)}
+                    className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 cursor-pointer"
+                    title="Edit Review"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm(`Delete review from ${name}?`)) {
+                        deleteReview(revId);
+                      }
+                    }}
+                    className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600 cursor-pointer"
+                    title="Delete Review"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
               </div>
             </div>
-
-            {/* Actions Bar */}
-            <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-              <div className="flex items-center gap-1">
-                {rev.status !== 'Approved' && (
-                  <button
-                    onClick={() => approveReview(rev.id)}
-                    className="px-2.5 py-1 rounded-lg bg-emerald-500 hover:bg-emerald-600 text-white text-[11px] font-bold flex items-center gap-1 transition-colors"
-                  >
-                    <CheckCircle2 className="w-3 h-3" />
-                    <span>Approve</span>
-                  </button>
-                )}
-                {rev.status === 'Pending' && (
-                  <button
-                    onClick={() => rejectReview(rev.id)}
-                    className="px-2 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-slate-700 hover:text-rose-600 text-[11px] font-semibold transition-colors"
-                  >
-                    Reject
-                  </button>
-                )}
-                <button
-                  onClick={() => toggleFeatured(rev.id)}
-                  className={`p-1.5 rounded-lg text-[11px] font-semibold transition-colors ${
-                    rev.featured
-                      ? 'bg-amber-100 text-amber-900 border border-amber-300'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                  title="Toggle Homepage Feature"
-                >
-                  <Sparkles className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={() => openEditModal(rev)}
-                  className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700"
-                  title="Edit Review"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => {
-                    if (confirm(`Delete review from ${rev.customerName}?`)) {
-                      deleteReview(rev.id);
-                    }
-                  }}
-                  className="p-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-600"
-                  title="Delete Review"
-                >
-                  <Trash2 className="w-3.5 h-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Add / Edit Review Modal */}
@@ -365,6 +433,15 @@ export default function ReviewsManagementPage() {
                     onChange={(e) => setFormData({ ...formData, customerLocation: e.target.value })}
                     placeholder="e.g. Munich, Germany"
                     className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                  />
+                </div>
+
+                <div className="col-span-2">
+                  <ImageUploader
+                    label="Guest Photo / Avatar (Optional)"
+                    value={formData.customerAvatar}
+                    onChange={(val) => setFormData({ ...formData, customerAvatar: val })}
+                    helperText="Upload guest profile picture from device (PNG, JPG, WEBP)"
                   />
                 </div>
 

@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useTeam } from '@/context/TeamContext';
+import ImageUploader from '@/components/common/ImageUploader';
 import {
   Users,
   Plus,
@@ -266,13 +267,11 @@ export default function TeamManagementPage() {
                 </div>
 
                 <div className="col-span-2">
-                  <label className="text-xs font-bold text-slate-700 block mb-1">Photo URL</label>
-                  <input
-                    type="text"
+                  <ImageUploader
+                    label="Team Member Photo / Avatar"
                     value={formData.photo}
-                    onChange={(e) => setFormData({ ...formData, photo: e.target.value })}
-                    placeholder="https://images.unsplash.com/photo-..."
-                    className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none"
+                    onChange={(val) => setFormData({ ...formData, photo: val })}
+                    helperText="Upload member photo from device (PNG, JPG, WEBP)"
                   />
                 </div>
 
