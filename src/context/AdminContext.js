@@ -5,9 +5,20 @@ import React, { createContext, useContext, useState, useCallback } from 'react';
 const AdminContext = createContext(null);
 
 export function AdminProvider({ children }) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [globalSearch, setGlobalSearch] = useState('');
   const [toasts, setToasts] = useState([]);
+
+  // Set default sidebar state based on initial screen width on client mount
+  React.useEffect(() => {
+    if (typeof window !== 'undefined') {
+      if (window.innerWidth >= 768) {
+        setSidebarOpen(true);
+      } else {
+        setSidebarOpen(false);
+      }
+    }
+  }, []);
   const [notifications, setNotifications] = useState([
     {
       id: 'notif-1',
