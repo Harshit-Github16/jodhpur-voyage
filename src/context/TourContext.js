@@ -3,12 +3,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { toursApi } from '@/services/api/toursApi';
 import { useAdmin } from './AdminContext';
+import { useAuth } from './AuthContext';
 
 const TourContext = createContext(null);
 
 export function TourProvider({ children }) {
+  const { isAuthenticated } = useAuth() || {};
   const [tours, setTours] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
@@ -22,6 +24,7 @@ export function TourProvider({ children }) {
   }
 
   const fetchTours = useCallback(async () => {
+    if (!isAuthenticated) return;
     setLoading(true);
     setError(null);
     try {
@@ -41,11 +44,13 @@ export function TourProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, searchQuery]);
+  }, [isAuthenticated, selectedCategory, searchQuery]);
 
   useEffect(() => {
-    fetchTours();
-  }, [fetchTours]);
+    if (isAuthenticated) {
+      fetchTours();
+    }
+  }, [isAuthenticated, fetchTours]);
 
   const addTour = useCallback(async (tourData) => {
     try {

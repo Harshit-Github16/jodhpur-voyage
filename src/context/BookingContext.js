@@ -3,12 +3,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { bookingsApi } from '@/services/api/bookingsApi';
 import { useAdmin } from './AdminContext';
+import { useAuth } from './AuthContext';
 
 const BookingContext = createContext(null);
 
 export function BookingProvider({ children }) {
+  const { isAuthenticated } = useAuth() || {};
   const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [statusFilter, setStatusFilter] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
@@ -22,6 +24,7 @@ export function BookingProvider({ children }) {
   }
 
   const fetchBookings = useCallback(async () => {
+    if (!isAuthenticated) return;
     setLoading(true);
     setError(null);
     try {
@@ -41,11 +44,13 @@ export function BookingProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, searchQuery]);
+  }, [isAuthenticated, statusFilter, searchQuery]);
 
   useEffect(() => {
-    fetchBookings();
-  }, [fetchBookings]);
+    if (isAuthenticated) {
+      fetchBookings();
+    }
+  }, [isAuthenticated, fetchBookings]);
 
   const addBooking = useCallback(
     async (bookingData) => {

@@ -2,16 +2,19 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { enquiriesApi } from '@/services/api/enquiriesApi';
+import { useAuth } from './AuthContext';
 
 const EnquiryContext = createContext();
 
 export function EnquiryProvider({ children }) {
+  const { isAuthenticated } = useAuth() || {};
   const [enquiries, setEnquiries] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('All');
 
   const fetchEnquiries = useCallback(async () => {
+    if (!isAuthenticated) return;
     setLoading(true);
     try {
       const res = await enquiriesApi.getEnquiries({
@@ -34,11 +37,13 @@ export function EnquiryProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, statusFilter]);
+  }, [isAuthenticated, searchQuery, statusFilter]);
 
   useEffect(() => {
-    fetchEnquiries();
-  }, [fetchEnquiries]);
+    if (isAuthenticated) {
+      fetchEnquiries();
+    }
+  }, [isAuthenticated, fetchEnquiries]);
 
   const addEnquiry = async (newEnq) => {
     try {

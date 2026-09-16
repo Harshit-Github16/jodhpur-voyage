@@ -3,12 +3,14 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { blogsApi } from '@/services/api/blogsApi';
 import { useAdmin } from './AdminContext';
+import { useAuth } from './AuthContext';
 
 const BlogContext = createContext(null);
 
 export function BlogProvider({ children }) {
+  const { isAuthenticated } = useAuth() || {};
   const [blogs, setBlogs] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
@@ -22,6 +24,7 @@ export function BlogProvider({ children }) {
   }
 
   const fetchBlogs = useCallback(async () => {
+    if (!isAuthenticated) return;
     setLoading(true);
     setError(null);
     try {
@@ -46,11 +49,13 @@ export function BlogProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [selectedCategory, searchQuery]);
+  }, [isAuthenticated, selectedCategory, searchQuery]);
 
   useEffect(() => {
-    fetchBlogs();
-  }, [fetchBlogs]);
+    if (isAuthenticated) {
+      fetchBlogs();
+    }
+  }, [isAuthenticated, fetchBlogs]);
 
   const addBlog = useCallback(
     async (blogData) => {

@@ -1,49 +1,86 @@
-import apiClient from './client';
-import { API_ENDPOINTS } from './endpoints';
+import { getAccessToken } from './client';
+
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://jodhpur-voyage-backend.vercel.app/api/v1';
 
 export const uploadApi = {
   /**
    * Upload single image file
-   * POST /upload/single
+   * POST /upload
    * Content-Type: multipart/form-data
    * Form Field: "image"
    */
-  uploadSingle: async (fileOrFormData) => {
-    let formData = fileOrFormData;
-    if (!(fileOrFormData instanceof FormData)) {
-      formData = new FormData();
-      formData.append('image', fileOrFormData);
-    }
+  uploadSingle: async (file) => {
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
 
-    return apiClient.post(API_ENDPOINTS.UPLOAD.SINGLE, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+      const token = getAccessToken();
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const uploadUrl = `${BASE_URL}/upload`;
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      const result = await res.json();
+      if (result.success && result.data) {
+        const url =
+          result.data.url ||
+          result.data.imageUrl ||
+          result.data.secure_url ||
+          result.data.path ||
+          (typeof result.data === 'string' ? result.data : null);
+
+        if (url) {
+          console.log('Uploaded Image URL:', url);
+          return { success: true, url, data: result.data };
+        }
+      }
+
+      throw new Error(result.message || 'Image upload failed');
+    } catch (err) {
+      console.error('Image upload error:', err);
+      throw err;
+    }
   },
 
   /**
-   * Upload multiple images (Up to 10)
-   * POST /upload/multiple
-   * Content-Type: multipart/form-data
-   * Form Field: "images"
+   * Upload multiple images
+   * POST /upload
    */
-  uploadMultiple: async (filesOrFormData) => {
-    let formData = filesOrFormData;
-    if (!(filesOrFormData instanceof FormData)) {
-      formData = new FormData();
-      if (Array.isArray(filesOrFormData) || filesOrFormData instanceof FileList) {
-        Array.from(filesOrFormData).forEach((f) => {
+  uploadMultiple: async (files) => {
+    try {
+      const formData = new FormData();
+      if (Array.isArray(files) || files instanceof FileList) {
+        Array.from(files).forEach((f) => {
           formData.append('images', f);
         });
       }
-    }
 
-    return apiClient.post(API_ENDPOINTS.UPLOAD.MULTIPLE, formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+      const token = getAccessToken();
+      const headers = {};
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const uploadUrl = `${BASE_URL}/upload`;
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+
+      const result = await res.json();
+      return result;
+    } catch (err) {
+      console.error('Multiple images upload error:', err);
+      throw err;
+    }
   },
 };
 

@@ -2,15 +2,18 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { customersApi } from '@/services/api/customersApi';
+import { useAuth } from './AuthContext';
 
 const CustomerContext = createContext(null);
 
 export function CustomerProvider({ children }) {
+  const { isAuthenticated } = useAuth() || {};
   const [customers, setCustomers] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
   const fetchCustomers = useCallback(async () => {
+    if (!isAuthenticated) return;
     setLoading(true);
     try {
       const res = await customersApi.getCustomers({ search: searchQuery || undefined });
@@ -25,11 +28,13 @@ export function CustomerProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery]);
+  }, [isAuthenticated, searchQuery]);
 
   useEffect(() => {
-    fetchCustomers();
-  }, [fetchCustomers]);
+    if (isAuthenticated) {
+      fetchCustomers();
+    }
+  }, [isAuthenticated, fetchCustomers]);
 
   return (
     <CustomerContext.Provider

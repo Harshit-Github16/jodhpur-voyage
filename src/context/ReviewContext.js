@@ -2,12 +2,14 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { reviewsApi } from '@/services/api/reviewsApi';
+import { useAuth } from './AuthContext';
 
 const ReviewContext = createContext();
 
 export function ReviewProvider({ children }) {
+  const { isAuthenticated } = useAuth() || {};
   const [reviews, setReviews] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const normalizeReview = (r) => {
     const customerName =
@@ -48,6 +50,7 @@ export function ReviewProvider({ children }) {
   };
 
   const fetchReviews = useCallback(async () => {
+    if (!isAuthenticated) return;
     setLoading(true);
     try {
       const res = await reviewsApi.getReviews();
@@ -63,11 +66,13 @@ export function ReviewProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    fetchReviews();
-  }, [fetchReviews]);
+    if (isAuthenticated) {
+      fetchReviews();
+    }
+  }, [isAuthenticated, fetchReviews]);
 
   const addReview = async (reviewData) => {
     try {

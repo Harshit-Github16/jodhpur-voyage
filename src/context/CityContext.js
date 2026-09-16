@@ -4,14 +4,16 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { citiesApi } from '@/services/api/citiesApi';
 import { destinationCategoriesApi } from '@/services/api/destinationCategoriesApi';
 import { useAdmin } from './AdminContext';
+import { useAuth } from './AuthContext';
 
 const CityContext = createContext(null);
 
 export function CityProvider({ children }) {
+  const { isAuthenticated } = useAuth() || {};
   const [cities, setCities] = useState([]);
   const [categories, setCategories] = useState([]);
   const [selectedCategoryId, setSelectedCategoryId] = useState('All');
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [error, setError] = useState(null);
 
@@ -25,6 +27,7 @@ export function CityProvider({ children }) {
 
   // Fetch Categories from API
   const fetchCategories = useCallback(async () => {
+    if (!isAuthenticated) return;
     try {
       const res = await destinationCategoriesApi.getCategories();
       if (res?.data) {
@@ -33,10 +36,11 @@ export function CityProvider({ children }) {
     } catch (err) {
       console.error('Error fetching destination categories:', err);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   // Fetch Cities with search & category filter from API
   const fetchCities = useCallback(async () => {
+    if (!isAuthenticated) return;
     setLoading(true);
     setError(null);
     try {
@@ -56,15 +60,19 @@ export function CityProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, [searchQuery, selectedCategoryId]);
+  }, [isAuthenticated, searchQuery, selectedCategoryId]);
 
   useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+    if (isAuthenticated) {
+      fetchCategories();
+    }
+  }, [isAuthenticated, fetchCategories]);
 
   useEffect(() => {
-    fetchCities();
-  }, [fetchCities]);
+    if (isAuthenticated) {
+      fetchCities();
+    }
+  }, [isAuthenticated, fetchCities]);
 
   // Category CRUD Handlers
   const addCategory = useCallback(

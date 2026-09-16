@@ -8,10 +8,28 @@ import { getAccessToken, setAccessToken } from '@/services/api/client';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const storedUser = localStorage.getItem('jv_auth_user');
+        if (storedUser) return JSON.parse(storedUser);
+      } catch (e) {}
+    }
+    return null;
+  });
+  const [token, setToken] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return getAccessToken();
+    }
+    return null;
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return !!getAccessToken();
+    }
+    return false;
+  });
   const [staffUsers, setStaffUsers] = useState([]);
 
   // Fetch staff users directly from backend API
@@ -26,52 +44,42 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  // Initialize auth and profile on mount
+  // Initialize auth and profile on mount (non-blocking)
   useEffect(() => {
-    async function initAuth() {
-      try {
-        const storedToken = getAccessToken();
-        const storedUser = localStorage.getItem('jv_auth_user');
+    const storedToken = getAccessToken();
+    const storedUser = localStorage.getItem('jv_auth_user');
 
-        if (storedToken) {
-          setToken(storedToken);
-          if (storedUser) {
-            try {
-              setUser(JSON.parse(storedUser));
-              setIsAuthenticated(true);
-            } catch (err) {
-              // invalid json
-            }
-          }
-
-          // Verify with /auth/me
-          try {
-            const meRes = await authApi.getMe();
-            if (meRes.success && meRes.data) {
-              setUser(meRes.data);
-              setIsAuthenticated(true);
-              localStorage.setItem('jv_auth_user', JSON.stringify(meRes.data));
-            }
-          } catch (err) {
-            console.warn('Silent /auth/me check failed:', err);
-          }
-        } else {
-          setUser(null);
-          setToken(null);
-          setIsAuthenticated(false);
+    if (storedToken) {
+      setToken(storedToken);
+      setIsAuthenticated(true);
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch (err) {
+          // invalid json
         }
-
-        if (storedToken) {
-          await fetchStaffUsers();
-        }
-      } catch (e) {
-        console.warn('Auth initialization error:', e);
-      } finally {
-        setIsLoading(false);
       }
-    }
 
-    initAuth();
+      // Silent background profile check
+      authApi.getMe()
+        .then((meRes) => {
+          if (meRes?.success && meRes?.data) {
+            setUser(meRes.data);
+            setIsAuthenticated(true);
+            localStorage.setItem('jv_auth_user', JSON.stringify(meRes.data));
+          }
+        })
+        .catch((err) => {
+          console.warn('Silent /auth/me check failed:', err);
+        });
+
+      fetchStaffUsers();
+    } else {
+      setUser(null);
+      setToken(null);
+      setIsAuthenticated(false);
+    }
+    setIsLoading(false);
   }, [fetchStaffUsers]);
 
   const login = useCallback(async (credentials) => {

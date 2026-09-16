@@ -118,7 +118,7 @@ export default function LoginPage() {
                 required
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="superadmin"
+                placeholder="admin@jodhpur.com"
                 className="w-full bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-slate-900 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 pl-10 pr-3.5 py-2.5 outline-none focus:border-[#0f172a] focus:ring-1 focus:ring-[#0f172a] transition-all"
               />
             </div>
@@ -132,7 +132,7 @@ export default function LoginPage() {
               </label>
               <button
                 type="button"
-                onClick={() => handleQuickFill('superadmin', '12345')}
+                onClick={() => handleQuickFill('admin@jodhpur.com', '12345678')}
                 className="text-[10px] font-bold text-amber-700 hover:text-amber-900 transition-colors"
               >
                 Reset Default
@@ -147,7 +147,7 @@ export default function LoginPage() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="••••••"
+                placeholder="••••••••"
                 className="w-full bg-slate-50 hover:bg-slate-100/70 focus:bg-white text-slate-900 text-xs sm:text-sm font-semibold rounded-xl border border-slate-200 pl-10 pr-10 py-2.5 outline-none focus:border-[#0f172a] focus:ring-1 focus:ring-[#0f172a] transition-all"
               />
               <button
@@ -179,23 +179,21 @@ export default function LoginPage() {
           <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider text-center">
             Quick Demo Login (1-Click Fill)
           </p>
-          <div className="grid grid-cols-2 gap-2">
+          <div>
             <button
               type="button"
-              onClick={() => handleQuickFill('superadmin', '12345')}
-              className="p-2.5 rounded-xl bg-amber-50/80 hover:bg-amber-100/80 border border-amber-200 text-left transition-colors cursor-pointer"
+              onClick={() => handleQuickFill('admin@jodhpur.com', '12345678')}
+              className="w-full p-2.5 rounded-xl bg-amber-50/80 hover:bg-amber-100/80 border border-amber-200 text-left transition-colors cursor-pointer flex items-center justify-between"
             >
-              <p className="text-[11px] font-bold text-amber-900">👑 Superadmin</p>
-              <p className="text-[9px] text-amber-700 font-mono">superadmin / 12345</p>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => handleQuickFill('admin@jodhpurvoyage.com', 'jodhpur@2025')}
-              className="p-2.5 rounded-xl bg-slate-50 hover:bg-slate-100 border border-slate-200 text-left transition-colors cursor-pointer"
-            >
-              <p className="text-[11px] font-bold text-slate-800">🧭 Tour Manager</p>
-              <p className="text-[9px] text-slate-500 font-mono">admin@jodhpur...</p>
+              <div>
+                <p className="text-[11px] font-bold text-amber-900 flex items-center gap-1.5">
+                  <span>👑</span> Superadmin
+                </p>
+                <p className="text-[10px] text-amber-700 font-mono mt-0.5">admin@jodhpur.com • 12345678</p>
+              </div>
+              <span className="text-[10px] font-bold text-amber-800 bg-amber-200/60 px-2 py-1 rounded-lg">
+                Click to Fill
+              </span>
             </button>
           </div>
         </div>

@@ -1,30 +1,49 @@
 'use client';
 
 import React, { useState, useRef } from 'react';
-import { UploadCloud, X, Image as ImageIcon, Check, RefreshCw } from 'lucide-react';
+import { uploadApi } from '@/services/api/uploadApi';
+import { UploadCloud, X, Check, RefreshCw, Loader2, Link, AlertCircle } from 'lucide-react';
 
 export function ImageUploader({
   value,
   onChange,
   label = 'Cover Image',
   required = false,
-  helperText = 'Upload image file from device (PNG, JPG, WEBP)',
+  helperText = 'Upload image file (PNG, JPG, WEBP) - auto-hosted on cloud',
 }) {
   const [dragActive, setDragActive] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState(null);
+  const [showUrlInput, setShowUrlInput] = useState(false);
+  const [directUrl, setDirectUrl] = useState('');
   const fileInputRef = useRef(null);
 
-  const handleFile = (file) => {
+  const handleFile = async (file) => {
     if (!file) return;
     if (!file.type.startsWith('image/')) {
-      alert('Please select a valid image file (PNG, JPG, WEBP, GIF)');
+      setUploadError('Please select a valid image file (PNG, JPG, WEBP, GIF)');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (e) => {
-      onChange(e.target?.result || '');
-    };
-    reader.readAsDataURL(file);
+    setUploadError(null);
+    setUploading(true);
+
+    try {
+      const res = await uploadApi.uploadSingle(file);
+      if (res?.url) {
+        onChange(res.url);
+      } else {
+        throw new Error('No URL returned from server');
+      }
+    } catch (err) {
+      console.error('Image upload failed:', err);
+      setUploadError(err?.message || 'Failed to upload image. Please try again.');
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
   };
 
   const handleDrop = (e) => {
@@ -49,18 +68,38 @@ export function ImageUploader({
   };
 
   const handleClear = (e) => {
-    e.stopPropagation();
+    if (e) e.stopPropagation();
     onChange('');
+    setUploadError(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
+  const handleApplyDirectUrl = () => {
+    if (directUrl.trim()) {
+      onChange(directUrl.trim());
+      setDirectUrl('');
+      setShowUrlInput(false);
+      setUploadError(null);
+    }
+  };
+
   return (
     <div className="space-y-1.5 text-xs">
-      <label className="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">
-        {label} {required && <span className="text-rose-500">*</span>}
-      </label>
+      <div className="flex items-center justify-between">
+        <label className="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+          {label} {required && <span className="text-rose-500">*</span>}
+        </label>
+        <button
+          type="button"
+          onClick={() => setShowUrlInput(!showUrlInput)}
+          className="text-[10px] font-bold text-amber-700 hover:text-amber-900 flex items-center gap-1 cursor-pointer transition-colors"
+        >
+          <Link className="w-3 h-3" />
+          <span>{showUrlInput ? 'Upload File Instead' : 'Paste Image URL'}</span>
+        </button>
+      </div>
 
       {/* Hidden file input */}
       <input
@@ -71,11 +110,53 @@ export function ImageUploader({
         className="hidden"
       />
 
-      {/* Image Preview Box if image exists */}
-      {value ? (
+      {/* Direct URL Input Mode */}
+      {showUrlInput && (
+        <div className="flex gap-2 p-2 rounded-xl bg-slate-50 border border-slate-200">
+          <input
+            type="url"
+            value={directUrl}
+            onChange={(e) => setDirectUrl(e.target.value)}
+            placeholder="https://example.com/image.jpg"
+            className="flex-1 px-3 py-1.5 bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-amber-500"
+          />
+          <button
+            type="button"
+            onClick={handleApplyDirectUrl}
+            className="px-3 py-1.5 bg-slate-900 hover:bg-black text-white font-bold rounded-lg text-xs transition-colors cursor-pointer"
+          >
+            Apply
+          </button>
+        </div>
+      )}
+
+      {/* Upload Error Alert */}
+      {uploadError && (
+        <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-[11px] font-medium flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+          <span>{uploadError}</span>
+        </div>
+      )}
+
+      {/* Image Preview Box or Upload Box */}
+      {uploading ? (
+        <div className="border-2 border-dashed border-amber-400 bg-amber-50/60 rounded-xl p-6 text-center flex flex-col items-center justify-center space-y-2">
+          <Loader2 className="w-7 h-7 text-amber-600 animate-spin" />
+          <p className="font-bold text-amber-900 text-xs">Uploading image to cloud...</p>
+          <p className="text-[10px] text-amber-700">Sending to media storage server</p>
+        </div>
+      ) : value ? (
         <div className="relative rounded-xl border border-slate-200 overflow-hidden bg-slate-50 group">
           <div className="relative h-40 w-full bg-slate-900/5 flex items-center justify-center">
-            <img src={value} alt="Preview" className="w-full h-full object-cover" />
+            <img
+              src={value}
+              alt="Preview"
+              className="w-full h-full object-cover"
+              onError={(e) => {
+                e.target.onerror = null;
+                e.target.src = 'https://images.unsplash.com/photo-1582510003544-4d00b7f74220?auto=format&fit=crop&w=800&q=80';
+              }}
+            />
             <div className="absolute inset-0 bg-slate-950/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
               <button
                 type="button"
@@ -96,11 +177,11 @@ export function ImageUploader({
             </div>
           </div>
           <div className="p-2.5 bg-white flex items-center justify-between border-t border-slate-100 text-[11px] text-slate-500">
-            <span className="flex items-center gap-1.5 font-medium text-emerald-700 truncate max-w-xs">
+            <span className="flex items-center gap-1.5 font-medium text-emerald-700 truncate max-w-xs" title={value}>
               <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              Image loaded
+              <span className="truncate">{value.startsWith('http') ? value : 'Image uploaded'}</span>
             </span>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}

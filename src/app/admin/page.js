@@ -107,7 +107,7 @@ export default function AdminDashboardPage() {
         />
         <StatCard
           title="Total Revenue"
-          value={`₹${(metrics.totalRevenue + 482650).toLocaleString()}`}
+          value={`₹${(metrics.totalRevenue + 0).toLocaleString()}`}
           growth="+18.4% this month"
           subtitle="From confirmed tour orders"
           icon={IndianRupee}
@@ -195,15 +195,14 @@ export default function AdminDashboardPage() {
                   <div className="flex items-center gap-2">
                     <span className="text-xs font-bold text-slate-900 truncate">{lead.name}</span>
                     <span
-                      className={`text-[9px] font-bold px-2 py-0.5 rounded-md ${
-                        lead.status === 'New'
+                      className={`text-[9px] font-bold px-2 py-0.5 rounded-md ${lead.status === 'New'
                           ? 'bg-amber-100 text-amber-800 border border-amber-300'
                           : lead.status === 'Converted'
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : lead.status === 'Contacted'
-                          ? 'bg-blue-100 text-blue-800'
-                          : 'bg-slate-100 text-slate-600'
-                      }`}
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : lead.status === 'Contacted'
+                              ? 'bg-blue-100 text-blue-800'
+                              : 'bg-slate-100 text-slate-600'
+                        }`}
                     >
                       {lead.status}
                     </span>

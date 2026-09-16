@@ -2,14 +2,17 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { teamApi } from '@/services/api/teamApi';
+import { useAuth } from './AuthContext';
 
 const TeamContext = createContext();
 
 export function TeamProvider({ children }) {
+  const { isAuthenticated } = useAuth() || {};
   const [team, setTeam] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
   const fetchTeam = useCallback(async () => {
+    if (!isAuthenticated) return;
     setLoading(true);
     try {
       const res = await teamApi.getTeamAdmin();
@@ -24,11 +27,13 @@ export function TeamProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   useEffect(() => {
-    fetchTeam();
-  }, [fetchTeam]);
+    if (isAuthenticated) {
+      fetchTeam();
+    }
+  }, [isAuthenticated, fetchTeam]);
 
   const addMember = async (memberData) => {
     try {

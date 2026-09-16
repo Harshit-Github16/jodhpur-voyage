@@ -1,60 +1,53 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
-import { settingsApi } from '@/services/api/settingsApi';
+import React, { createContext, useContext, useState } from 'react';
+
+const DEFAULT_SETTINGS = {
+  siteName: 'Jodhpur Voyage',
+  siteTagline: 'Luxury Heritage Travel & Royal Experiences in Blue City',
+  supportEmail: 'concierge@jodhpurvoyage.com',
+  supportPhone: '+91 291 254 8900',
+  address: 'Haveli Tower, Clock Tower Road, Old City, Jodhpur, Rajasthan 342001',
+  currency: 'INR',
+  currencySymbol: '₹',
+  maintenanceMode: false,
+};
 
 const SettingsContext = createContext();
 
 export function SettingsProvider({ children }) {
-  const [settings, setSettings] = useState({
-    siteName: 'Jodhpur Voyage',
-    siteTagline: 'Luxury Heritage Travel & Royal Experiences in Blue City',
-    supportEmail: 'concierge@jodhpurvoyage.com',
-    supportPhone: '+91 291 254 8900',
-    address: 'Haveli Tower, Clock Tower Road, Old City, Jodhpur, Rajasthan 342001',
-    currency: 'INR',
-    currencySymbol: '₹',
-    maintenanceMode: false,
+  const [settings, setSettings] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('jv_settings');
+        if (saved) return JSON.parse(saved);
+      } catch (e) {
+        // ignore
+      }
+    }
+    return DEFAULT_SETTINGS;
   });
   const [isSavedRecently, setIsSavedRecently] = useState(false);
-  const [loading, setLoading] = useState(true);
-
-  const fetchSettings = useCallback(async () => {
-    setLoading(true);
-    try {
-      const res = await settingsApi.getSettings();
-      if (res?.data) {
-        setSettings(res.data.data || res.data);
-      }
-    } catch (e) {
-      console.warn('Failed to load settings from API:', e);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchSettings();
-  }, [fetchSettings]);
+  const [loading] = useState(false);
 
   const saveSettings = async (newSettings) => {
     try {
-      const res = await settingsApi.updateSettings(newSettings);
-      if (res?.data) {
-        setSettings(res.data.data || res.data);
-      } else {
-        setSettings(newSettings);
+      setSettings(newSettings);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('jv_settings', JSON.stringify(newSettings));
       }
       setIsSavedRecently(true);
       setTimeout(() => setIsSavedRecently(false), 3000);
     } catch (e) {
       console.error('Failed to save settings:', e);
-      throw e;
     }
   };
 
   const resetToDefaults = async () => {
-    await fetchSettings();
+    setSettings(DEFAULT_SETTINGS);
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('jv_settings');
+    }
   };
 
   return (
@@ -63,7 +56,6 @@ export function SettingsProvider({ children }) {
         settings,
         loading,
         isSavedRecently,
-        fetchSettings,
         saveSettings,
         resetToDefaults,
       }}
