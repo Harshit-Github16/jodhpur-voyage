@@ -118,7 +118,9 @@ export const API_ENDPOINTS = {
   // 14. File & Media Upload (/upload)
   UPLOAD: {
     SINGLE: '/upload',
-    MULTIPLE: '/upload',
+    SINGLE_ALT: '/upload/single',
+    IMAGE: '/upload/image',
+    MULTIPLE: '/upload/multiple',
   },
 };
 

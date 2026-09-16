@@ -5,11 +5,14 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://jodhpur-voyage
 export const uploadApi = {
   /**
    * Upload single image file
-   * POST /upload
+   * Supports:
+   * - POST /upload
+   * - POST /upload/single
+   * - POST /upload/image
    * Content-Type: multipart/form-data
    * Form Field: "image"
    */
-  uploadSingle: async (file) => {
+  uploadSingle: async (file, endpoint = '/upload') => {
     try {
       const formData = new FormData();
       formData.append('image', file);
@@ -20,7 +23,7 @@ export const uploadApi = {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const uploadUrl = `${BASE_URL}/upload`;
+      const uploadUrl = `${BASE_URL}${endpoint}`;
       const res = await fetch(uploadUrl, {
         method: 'POST',
         headers,
@@ -51,7 +54,9 @@ export const uploadApi = {
 
   /**
    * Upload multiple images
-   * POST /upload
+   * POST /upload/multiple
+   * Content-Type: multipart/form-data
+   * Form Field: "images"
    */
   uploadMultiple: async (files) => {
     try {
@@ -68,7 +73,7 @@ export const uploadApi = {
         headers['Authorization'] = `Bearer ${token}`;
       }
 
-      const uploadUrl = `${BASE_URL}/upload`;
+      const uploadUrl = `${BASE_URL}/upload/multiple`;
       const res = await fetch(uploadUrl, {
         method: 'POST',
         headers,
@@ -76,6 +81,13 @@ export const uploadApi = {
       });
 
       const result = await res.json();
+      if (result.success && result.data) {
+        const urls = Array.isArray(result.data)
+          ? result.data.map((item) => (typeof item === 'string' ? item : item.url || item.secure_url || item.imageUrl))
+          : (result.data.urls || [result.data.url || result.data]);
+        return { success: true, urls, data: result.data };
+      }
+
       return result;
     } catch (err) {
       console.error('Multiple images upload error:', err);
