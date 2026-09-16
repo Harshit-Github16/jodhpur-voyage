@@ -11,7 +11,7 @@ const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://jodhpur-voyage
 // Create Axios Instance
 export const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 15000,
+  timeout: 30000,
   withCredentials: true, // required for httpOnly refresh cookies
   headers: {
     'Content-Type': 'application/json',
@@ -50,81 +50,35 @@ apiClient.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Auto-refresh token on 401 Unauthorized
-let isRefreshing = false;
-let failedQueue = [];
-
-const processQueue = (error, token = null) => {
-  failedQueue.forEach((prom) => {
-    if (error) {
-      prom.reject(error);
-    } else {
-      prom.resolve(token);
-    }
-  });
-  failedQueue = [];
-};
-
+// Response Interceptor
 apiClient.interceptors.response.use(
   (response) => {
     return response.data;
   },
-  async (error) => {
-    const originalRequest = error.config;
-
+  (error) => {
     // Normalize error object
+    const status = error?.response?.status || error?.response?.data?.statusCode || 500;
+    const message =
+      error?.response?.data?.message ||
+      error?.message ||
+      'An unexpected API error occurred';
+
     const errorResponse = {
       success: false,
-      statusCode: error?.response?.status || error?.response?.data?.statusCode || 500,
-      message:
-        error?.response?.data?.message ||
-        error?.message ||
-        'An unexpected API error occurred',
+      statusCode: status,
+      message,
       errors: error?.response?.data?.errors || [],
       data: error?.response?.data || null,
     };
 
-    if (
-      error.response?.status === 401 &&
-      !originalRequest?._retry &&
-      !originalRequest?.url?.includes('/auth/login') &&
-      !originalRequest?.url?.includes('/auth/refresh')
-    ) {
-      if (isRefreshing) {
-        return new Promise((resolve, reject) => {
-          failedQueue.push({ resolve, reject });
-        })
-          .then((token) => {
-            originalRequest.headers.Authorization = `Bearer ${token}`;
-            return apiClient(originalRequest);
-          })
-          .catch((err) => Promise.reject(err));
-      }
-
-      originalRequest._retry = true;
-      isRefreshing = true;
-
-      try {
-        const storedToken = getAccessToken();
-        const { data } = await axios.post(
-          `${BASE_URL}/auth/refresh`,
-          { refreshToken: storedToken },
-          { withCredentials: true }
-        );
-
-        const newToken = data?.data?.token || data?.token || data?.data?.accessToken;
-        if (newToken) {
-          setAccessToken(newToken);
-          apiClient.defaults.headers.common.Authorization = `Bearer ${newToken}`;
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-          processQueue(null, newToken);
-          return apiClient(originalRequest);
+    // If 401 Unauthorized, clear stale token and redirect to login if on protected route
+    if (status === 401) {
+      setAccessToken(null);
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('jv_auth_user');
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
         }
-      } catch (refreshErr) {
-        processQueue(refreshErr, null);
-        setAccessToken(null);
-      } finally {
-        isRefreshing = false;
       }
     }
 
