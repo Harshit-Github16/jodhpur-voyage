@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { extractHtmlContent } from '@/utils/contentHelper';
 import {
   Bold,
   Italic,
@@ -54,15 +55,17 @@ export default function RichTextEditor({
   const [isCodeView, setIsCodeView] = useState(false);
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showHighlightPicker, setShowHighlightPicker] = useState(false);
-  const [currentHtml, setCurrentHtml] = useState(value || '');
+  const initialHtml = typeof value === 'object' ? extractHtmlContent(value) : (value || '');
+  const [currentHtml, setCurrentHtml] = useState(initialHtml);
   const isInternalUpdate = useRef(false);
 
   // Sync external value changes when not triggered internally
   useEffect(() => {
+    const safeVal = typeof value === 'object' ? extractHtmlContent(value) : (value || '');
     if (!isInternalUpdate.current) {
-      setCurrentHtml(value || '');
-      if (editorRef.current && editorRef.current.innerHTML !== (value || '')) {
-        editorRef.current.innerHTML = value || '';
+      setCurrentHtml(safeVal);
+      if (editorRef.current && editorRef.current.innerHTML !== safeVal) {
+        editorRef.current.innerHTML = safeVal;
       }
     }
     isInternalUpdate.current = false;

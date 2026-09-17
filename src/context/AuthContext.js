@@ -8,28 +8,10 @@ import { getAccessToken, setAccessToken } from '@/services/api/client';
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const storedUser = localStorage.getItem('jv_auth_user');
-        if (storedUser) return JSON.parse(storedUser);
-      } catch (e) {}
-    }
-    return null;
-  });
-  const [token, setToken] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return getAccessToken();
-    }
-    return null;
-  });
-  const [isLoading, setIsLoading] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    if (typeof window !== 'undefined') {
-      return !!getAccessToken();
-    }
-    return false;
-  });
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [staffUsers, setStaffUsers] = useState([]);
 
   // Fetch staff users directly from backend API

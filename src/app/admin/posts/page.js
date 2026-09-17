@@ -2,8 +2,16 @@
 
 import React, { useState } from 'react';
 import { usePosts } from '@/context/PostContext';
+import { postsApi } from '@/services/api/postsApi';
 import ImageUploader from '@/components/common/ImageUploader';
 import RichTextEditor from '@/components/common/RichTextEditor';
+import {
+  extractHtmlContent,
+  extractTitle,
+  extractCoverImage,
+  extractAuthorName,
+  extractPlainText,
+} from '@/utils/contentHelper';
 import {
   Newspaper,
   Plus,
@@ -52,6 +60,7 @@ export default function PostsPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPost, setEditingPost] = useState(null);
   const [previewPost, setPreviewPost] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
   // Form State
@@ -70,11 +79,7 @@ export default function PostsPage() {
     featured: false,
   });
 
-  const getAuthorName = (author) => {
-    if (!author) return 'Admin';
-    if (typeof author === 'object') return author.name || 'Admin';
-    return String(author);
-  };
+  const getAuthorName = (author) => extractAuthorName(author, 'Admin');
 
   const getAuthorRole = (author, authorRole) => {
     if (typeof author === 'object' && author?.role) return author.role;
@@ -84,6 +89,28 @@ export default function PostsPage() {
   const getAuthorAvatar = (author, authorAvatar) => {
     if (typeof author === 'object' && author?.avatar) return author.avatar;
     return authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80';
+  };
+
+  const handleOpenPreview = async (post) => {
+    setPreviewPost(post);
+    setPreviewLoading(true);
+    try {
+      const slugOrId = post.slug || post.id || post._id;
+      if (slugOrId) {
+        const res = await postsApi.getPostBySlug(slugOrId);
+        if (res?.data) {
+          const fullData = res.data.data || res.data;
+          setPreviewPost((prev) => ({
+            ...prev,
+            ...fullData,
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch full post detail for preview:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
   };
 
   const openAddModal = () => {
@@ -105,23 +132,43 @@ export default function PostsPage() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (post) => {
+  const openEditModal = async (post) => {
+    const initialContent = extractHtmlContent(post);
     setEditingPost(post);
     setFormData({
-      title: post.title || '',
+      title: extractTitle(post.title || post),
       slug: post.slug || '',
       category: post.category || 'Rajasthan',
-      excerpt: post.excerpt || '',
-      content: post.content || '',
+      excerpt: extractPlainText(post.excerpt || initialContent, 160),
+      content: initialContent,
       author: getAuthorName(post.author),
       authorRole: getAuthorRole(post.author, post.authorRole),
-      coverImage: post.coverImage || '',
+      coverImage: extractCoverImage(post) || '',
       readTime: post.readTime || '4 min read',
       tags: Array.isArray(post.tags) ? post.tags.join(', ') : (post.tags || ''),
       status: post.status || 'Published',
       featured: Boolean(post.featured),
     });
     setIsModalOpen(true);
+
+    if (!initialContent && (post.slug || post.id || post._id)) {
+      try {
+        const res = await postsApi.getPostBySlug(post.slug || post.id || post._id);
+        if (res?.data) {
+          const fullData = res.data.data || res.data;
+          const fullContent = extractHtmlContent(fullData);
+          if (fullContent) {
+            setFormData((prev) => ({
+              ...prev,
+              content: fullContent,
+              excerpt: prev.excerpt || extractPlainText(fullData.excerpt || fullContent, 160),
+            }));
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch full post detail for editor:', err);
+      }
+    }
   };
 
   const handleSyncWordPress = async () => {
@@ -261,10 +308,14 @@ export default function PostsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {posts.map((post) => {
+          {posts.map((post, idx) => {
             const postId = post.id || post._id;
             const authorName = getAuthorName(post.author);
             const authorAvatar = getAuthorAvatar(post.author, post.authorAvatar);
+            const coverImg = extractCoverImage(post, idx);
+            const postTitle = extractTitle(post.title || post);
+            const postExcerpt = extractPlainText(post.excerpt || post.content || post.summary, 140);
+
             return (
               <div
                 key={postId}
@@ -273,8 +324,11 @@ export default function PostsPage() {
                 {/* Cover Image */}
                 <div className="relative h-48 w-full bg-slate-100">
                   <img
-                    src={post.coverImage || 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80'}
-                    alt={post.title}
+                    src={coverImg}
+                    alt={postTitle}
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80';
+                    }}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-3 left-3 flex items-center gap-1.5">
@@ -301,7 +355,7 @@ export default function PostsPage() {
                   </div>
                 </div>
 
-                {/* Content */}
+                {/* Article Content */}
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
                     <div className="flex items-center gap-3 text-[11px] text-slate-400">
@@ -317,17 +371,17 @@ export default function PostsPage() {
                     </div>
 
                     <h3 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2">
-                      {post.title}
+                      {postTitle}
                     </h3>
 
                     <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                      {post.excerpt}
+                      {postExcerpt || 'No excerpt available.'}
                     </p>
 
                     {/* Tags */}
-                    {post.tags && (Array.isArray(post.tags) ? post.tags.length > 0 : Boolean(post.tags)) && (
+                    {post.tags && post.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 pt-1">
-                        {(Array.isArray(post.tags) ? post.tags : String(post.tags).split(',')).slice(0, 3).map((t, i) => (
+                        {(Array.isArray(post.tags) ? post.tags : [post.tags]).slice(0, 3).map((t, i) => (
                           <span
                             key={i}
                             className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium border border-slate-200"
@@ -352,7 +406,7 @@ export default function PostsPage() {
 
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => setPreviewPost(post)}
+                        onClick={() => handleOpenPreview(post)}
                         className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
                         title="Preview Post"
                       >
@@ -590,16 +644,16 @@ export default function PostsPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              {previewPost.coverImage && (
+              {extractCoverImage(previewPost) && (
                 <img
-                  src={previewPost.coverImage}
-                  alt={previewPost.title}
+                  src={extractCoverImage(previewPost)}
+                  alt={extractTitle(previewPost.title)}
                   className="w-full h-64 rounded-xl object-cover"
                 />
               )}
 
               <h2 className="text-xl font-black text-slate-900 leading-snug">
-                {previewPost.title}
+                {extractTitle(previewPost.title)}
               </h2>
 
               <div className="flex items-center gap-3 text-xs text-slate-500 py-2 border-y border-slate-100">
@@ -610,10 +664,21 @@ export default function PostsPage() {
                 <span>{previewPost.publishedAt?.slice(0, 10) || previewPost.createdAt?.slice(0, 10) || '2026-09-17'}</span>
               </div>
 
-              <div
-                className="blog-html-content"
-                dangerouslySetInnerHTML={{ __html: previewPost.content || previewPost.excerpt }}
-              />
+              {previewLoading && !extractHtmlContent(previewPost) ? (
+                <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
+                  <RefreshCw className="w-6 h-6 animate-spin text-amber-500" />
+                  <p className="text-xs font-semibold">Loading post content...</p>
+                </div>
+              ) : extractHtmlContent(previewPost) ? (
+                <div
+                  className="blog-html-content"
+                  dangerouslySetInnerHTML={{ __html: extractHtmlContent(previewPost) }}
+                />
+              ) : (
+                <div className="py-8 px-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center">
+                  <p className="text-xs text-slate-500">No article body content found for this post.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

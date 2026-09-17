@@ -2,7 +2,14 @@
 
 import React, { useState } from 'react';
 import { useCommentaires } from '@/context/CommentaireContext';
+import { commentairesApi } from '@/services/api/commentairesApi';
 import RichTextEditor from '@/components/common/RichTextEditor';
+import {
+  extractHtmlContent,
+  extractTitle,
+  extractAuthorName,
+  extractPlainText,
+} from '@/utils/contentHelper';
 import {
   MessageSquareText,
   Plus,
@@ -48,6 +55,7 @@ export default function CommentariesPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [previewItem, setPreviewItem] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
   // Form State
@@ -61,24 +69,14 @@ export default function CommentariesPage() {
     status: 'Published',
   });
 
-  const getAuthorName = (author) => {
-    if (!author) return 'Traveler';
-    if (typeof author === 'object') return author.name || 'Traveler';
-    return String(author);
-  };
+  const getAuthorName = (author) => extractAuthorName(author, 'Traveler');
 
   const getAuthorEmail = (author, fallbackEmail) => {
     if (typeof author === 'object' && author?.email) return author.email;
     return fallbackEmail || '';
   };
 
-  const getPlainText = (htmlOrText) => {
-    if (!htmlOrText) return '';
-    return String(htmlOrText)
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/\s+/g, ' ')
-      .trim();
-  };
+  const getPlainText = (htmlOrText) => extractPlainText(htmlOrText, 140);
 
   // Stats calculation
   const totalCount = commentaires.length;
@@ -87,6 +85,28 @@ export default function CommentariesPage() {
   const avgRating = totalCount > 0
     ? (commentaires.reduce((acc, c) => acc + (Number(c.rating) || 5), 0) / totalCount).toFixed(1)
     : '5.0';
+
+  const handleOpenPreview = async (item) => {
+    setPreviewItem(item);
+    setPreviewLoading(true);
+    try {
+      const slugOrId = item.slug || item.id || item._id;
+      if (slugOrId) {
+        const res = await commentairesApi.getCommentaireBySlug(slugOrId);
+        if (res?.data) {
+          const fullData = res.data.data || res.data;
+          setPreviewItem((prev) => ({
+            ...prev,
+            ...fullData,
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch full commentaire detail for preview:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
 
   const openAddModal = () => {
     setEditingItem(null);
@@ -102,18 +122,37 @@ export default function CommentariesPage() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (item) => {
+  const openEditModal = async (item) => {
+    const initialContent = extractHtmlContent(item);
     setEditingItem(item);
     setFormData({
       author: getAuthorName(item.author),
       email: getAuthorEmail(item.author, item.email),
-      title: item.title || '',
-      content: item.content || item.comment || '',
+      title: extractTitle(item.title, ''),
+      content: initialContent,
       rating: Number(item.rating) || 5,
       tour: item.tour || item.tourName || '',
       status: item.status || 'Published',
     });
     setIsModalOpen(true);
+
+    if (!initialContent && (item.slug || item.id || item._id)) {
+      try {
+        const res = await commentairesApi.getCommentaireBySlug(item.slug || item.id || item._id);
+        if (res?.data) {
+          const fullData = res.data.data || res.data;
+          const fullContent = extractHtmlContent(fullData);
+          if (fullContent) {
+            setFormData((prev) => ({
+              ...prev,
+              content: fullContent,
+            }));
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch full commentaire detail for editor:', err);
+      }
+    }
   };
 
   const handleSyncWordPress = async () => {
@@ -376,7 +415,7 @@ export default function CommentariesPage() {
 
                   <div className="flex items-center gap-1">
                     <button
-                      onClick={() => setPreviewItem(item)}
+                      onClick={() => handleOpenPreview(item)}
                       className="p-1 rounded-md bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
                       title="Preview Full Commentary"
                     >
@@ -466,7 +505,7 @@ export default function CommentariesPage() {
                       <td className="p-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
                           <button
-                            onClick={() => setPreviewItem(item)}
+                            onClick={() => handleOpenPreview(item)}
                             className="p-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700"
                             title="Preview"
                           >
@@ -669,7 +708,7 @@ export default function CommentariesPage() {
 
             <div className="flex-1 overflow-y-auto p-5 space-y-3.5">
               <h2 className="text-base font-black text-slate-900 leading-snug">
-                {previewItem.title || 'Traveler Commentary'}
+                {extractTitle(previewItem.title || previewItem.tour || 'Traveler Commentary')}
               </h2>
 
               <div className="flex items-center gap-2 text-xs text-slate-500 py-1.5 border-y border-slate-100">
@@ -681,15 +720,26 @@ export default function CommentariesPage() {
                   </>
                 )}
                 <span>•</span>
-                <span>{previewItem.createdAt?.slice(0, 10) || '2026-09-17'}</span>
+                <span>{previewItem.createdAt?.slice(0, 10) || previewItem.date?.slice(0, 10) || '2026-09-17'}</span>
               </div>
 
-              <div
-                className="blog-html-content"
-                dangerouslySetInnerHTML={{
-                  __html: previewItem.content || previewItem.comment || '',
-                }}
-              />
+              {previewLoading && !extractHtmlContent(previewItem) ? (
+                <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
+                  <RefreshCw className="w-6 h-6 animate-spin text-amber-500" />
+                  <p className="text-xs font-semibold">Loading commentaire content...</p>
+                </div>
+              ) : extractHtmlContent(previewItem) ? (
+                <div
+                  className="blog-html-content"
+                  dangerouslySetInnerHTML={{
+                    __html: extractHtmlContent(previewItem),
+                  }}
+                />
+              ) : (
+                <div className="py-8 px-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center">
+                  <p className="text-xs text-slate-500">No commentary message or review text found.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

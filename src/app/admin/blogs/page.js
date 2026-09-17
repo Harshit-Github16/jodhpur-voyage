@@ -2,8 +2,16 @@
 
 import React, { useState } from 'react';
 import { useBlogs } from '@/context/BlogContext';
+import { blogsApi } from '@/services/api/blogsApi';
 import ImageUploader from '@/components/common/ImageUploader';
 import RichTextEditor from '@/components/common/RichTextEditor';
+import {
+  extractHtmlContent,
+  extractTitle,
+  extractCoverImage,
+  extractAuthorName,
+  extractPlainText,
+} from '@/utils/contentHelper';
 import {
   BookOpen,
   Plus,
@@ -38,6 +46,7 @@ export default function BlogsManagementPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBlog, setEditingBlog] = useState(null);
   const [previewBlog, setPreviewBlog] = useState(null);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [syncing, setSyncing] = useState(false);
 
   const handleSyncWordPress = async () => {
@@ -64,11 +73,7 @@ export default function BlogsManagementPage() {
   });
 
   // Helper functions for author resolution
-  const getAuthorName = (author) => {
-    if (!author) return 'Admin';
-    if (typeof author === 'object') return author.name || 'Admin';
-    return String(author);
-  };
+  const getAuthorName = (author) => extractAuthorName(author, 'Admin');
 
   const getAuthorRole = (author, authorRole) => {
     if (typeof author === 'object' && author?.role) return author.role;
@@ -78,6 +83,28 @@ export default function BlogsManagementPage() {
   const getAuthorAvatar = (author, authorAvatar) => {
     if (typeof author === 'object' && author?.avatar) return author.avatar;
     return authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80';
+  };
+
+  const handleOpenPreview = async (blog) => {
+    setPreviewBlog(blog);
+    setPreviewLoading(true);
+    try {
+      const slugOrId = blog.slug || blog.id || blog._id;
+      if (slugOrId) {
+        const res = await blogsApi.getBlogById(slugOrId);
+        if (res?.data) {
+          const fullData = res.data.data || res.data;
+          setPreviewBlog((prev) => ({
+            ...prev,
+            ...fullData,
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('Failed to fetch full blog detail for preview:', err);
+    } finally {
+      setPreviewLoading(false);
+    }
   };
 
   const openAddModal = () => {
@@ -99,23 +126,43 @@ export default function BlogsManagementPage() {
     setIsModalOpen(true);
   };
 
-  const openEditModal = (blog) => {
+  const openEditModal = async (blog) => {
+    const initialContent = extractHtmlContent(blog);
     setEditingBlog(blog);
     setFormData({
-      title: blog.title || '',
+      title: extractTitle(blog.title || blog),
       slug: blog.slug || '',
       category: blog.category || 'Travel Guide',
-      excerpt: blog.excerpt || '',
-      content: blog.content || '',
+      excerpt: extractPlainText(blog.excerpt || blog.summary || initialContent, 160),
+      content: initialContent,
       author: getAuthorName(blog.author),
       authorRole: getAuthorRole(blog.author, blog.authorRole),
-      coverImage: blog.coverImage || '',
+      coverImage: extractCoverImage(blog) || '',
       readTime: blog.readTime || '5 min read',
       tags: Array.isArray(blog.tags) ? blog.tags.join(', ') : (blog.tags || ''),
       status: blog.status || 'Published',
       featured: Boolean(blog.featured),
     });
     setIsModalOpen(true);
+
+    if (!initialContent && (blog.slug || blog.id || blog._id)) {
+      try {
+        const res = await blogsApi.getBlogById(blog.slug || blog.id || blog._id);
+        if (res?.data) {
+          const fullData = res.data.data || res.data;
+          const fullContent = extractHtmlContent(fullData);
+          if (fullContent) {
+            setFormData((prev) => ({
+              ...prev,
+              content: fullContent,
+              excerpt: prev.excerpt || extractPlainText(fullData.excerpt || fullContent, 160),
+            }));
+          }
+        }
+      } catch (err) {
+        console.warn('Failed to fetch full blog detail for editor:', err);
+      }
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -231,10 +278,14 @@ export default function BlogsManagementPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {blogs.map((blog) => {
+          {blogs.map((blog, idx) => {
             const blogId = blog.id || blog._id;
             const authorName = getAuthorName(blog.author);
             const authorAvatar = getAuthorAvatar(blog.author, blog.authorAvatar);
+            const coverImg = extractCoverImage(blog, idx);
+            const blogTitle = extractTitle(blog.title || blog);
+            const blogExcerpt = extractPlainText(blog.excerpt || blog.content || blog.summary, 140);
+
             return (
               <div
                 key={blogId}
@@ -243,13 +294,16 @@ export default function BlogsManagementPage() {
                 {/* Cover Image */}
                 <div className="relative h-48 w-full bg-slate-100">
                   <img
-                    src={blog.coverImage || 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80'}
-                    alt={blog.title}
+                    src={coverImg}
+                    alt={blogTitle}
+                    onError={(e) => {
+                      e.currentTarget.src = 'https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?auto=format&fit=crop&w=800&q=80';
+                    }}
                     className="w-full h-full object-cover"
                   />
                   <div className="absolute top-3 left-3 flex items-center gap-1.5">
                     <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#0f172a]/90 text-white shadow-sm">
-                      {blog.category}
+                      {blog.category || 'Travel Guide'}
                     </span>
                     {blog.featured && (
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500 text-white shadow-2xs">
@@ -265,7 +319,7 @@ export default function BlogsManagementPage() {
                           : 'bg-slate-100 text-slate-700'
                         }`}
                     >
-                      {blog.status}
+                      {blog.status || 'Published'}
                     </span>
                   </div>
                 </div>
@@ -286,11 +340,11 @@ export default function BlogsManagementPage() {
                     </div>
 
                     <h3 className="font-extrabold text-slate-900 text-sm leading-snug line-clamp-2">
-                      {blog.title}
+                      {blogTitle}
                     </h3>
 
                     <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">
-                      {blog.excerpt}
+                      {blogExcerpt || 'No excerpt available.'}
                     </p>
 
                     {/* Tags */}
@@ -301,7 +355,7 @@ export default function BlogsManagementPage() {
                             key={i}
                             className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-medium border border-slate-200"
                           >
-                            #{t}
+                            #{String(t).trim()}
                           </span>
                         ))}
                       </div>
@@ -321,7 +375,7 @@ export default function BlogsManagementPage() {
 
                     <div className="flex items-center gap-1">
                       <button
-                        onClick={() => setPreviewBlog(blog)}
+                        onClick={() => handleOpenPreview(blog)}
                         className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
                         title="Preview Article"
                       >
@@ -586,28 +640,41 @@ export default function BlogsManagementPage() {
             </div>
 
             <div className="flex-1 overflow-y-auto p-6 space-y-4">
-              <img
-                src={previewBlog.coverImage}
-                alt={previewBlog.title}
-                className="w-full h-64 rounded-xl object-cover"
-              />
+              {extractCoverImage(previewBlog) && (
+                <img
+                  src={extractCoverImage(previewBlog)}
+                  alt={extractTitle(previewBlog.title)}
+                  className="w-full h-64 rounded-xl object-cover"
+                />
+              )}
 
               <h2 className="text-xl font-black text-slate-900 leading-snug">
-                {previewBlog.title}
+                {extractTitle(previewBlog.title)}
               </h2>
 
               <div className="flex items-center gap-3 text-xs text-slate-500 py-2 border-y border-slate-100">
                 <span className="font-bold text-slate-800">By {getAuthorName(previewBlog.author)}</span>
                 <span>•</span>
-                <span>{previewBlog.readTime}</span>
+                <span>{previewBlog.readTime || '5 min read'}</span>
                 <span>•</span>
                 <span>{previewBlog.publishedAt?.slice(0, 10) || previewBlog.createdAt?.slice(0, 10) || '2026-09-08'}</span>
               </div>
 
-              <div
-                className="blog-html-content"
-                dangerouslySetInnerHTML={{ __html: previewBlog.content || previewBlog.excerpt }}
-              />
+              {previewLoading && !extractHtmlContent(previewBlog) ? (
+                <div className="py-12 flex flex-col items-center justify-center text-slate-400 gap-2">
+                  <RefreshCw className="w-6 h-6 animate-spin text-amber-500" />
+                  <p className="text-xs font-semibold">Loading article content...</p>
+                </div>
+              ) : extractHtmlContent(previewBlog) ? (
+                <div
+                  className="blog-html-content"
+                  dangerouslySetInnerHTML={{ __html: extractHtmlContent(previewBlog) }}
+                />
+              ) : (
+                <div className="py-8 px-4 rounded-xl bg-slate-50 border border-dashed border-slate-200 text-center">
+                  <p className="text-xs text-slate-500">No article body content found for this blog post.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>

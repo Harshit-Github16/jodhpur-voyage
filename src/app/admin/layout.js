@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar from '@/components/admin/Sidebar';
 import Navbar from '@/components/admin/Navbar';
@@ -12,19 +12,27 @@ export default function AdminLayout({ children }) {
   const router = useRouter();
   const { sidebarOpen } = useAdmin();
   const { isAuthenticated, isLoading } = useAuth();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (mounted && !isLoading && !isAuthenticated) {
       router.replace('/login');
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [mounted, isAuthenticated, isLoading, router]);
 
-  if (!isAuthenticated && isLoading) {
-    return null;
-  }
-
-  if (!isAuthenticated) {
-    return null;
+  if (!mounted || isLoading || !isAuthenticated) {
+    return (
+      <div className="h-screen w-screen flex items-center justify-center bg-[#090e1a] text-white">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-2 border-amber-400 border-t-transparent rounded-full animate-spin" />
+          <p className="text-xs font-semibold text-slate-400">Verifying session...</p>
+        </div>
+      </div>
+    );
   }
 
   return (
