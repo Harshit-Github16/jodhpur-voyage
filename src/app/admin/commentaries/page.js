@@ -9,6 +9,7 @@ import {
   extractTitle,
   extractAuthorName,
   extractPlainText,
+  fetchFullWordPressContent,
 } from '@/utils/contentHelper';
 import {
   MessageSquareText,
@@ -90,17 +91,29 @@ export default function CommentariesPage() {
     setPreviewItem(item);
     setPreviewLoading(true);
     try {
+      let fullItem = { ...item };
       const slugOrId = item.slug || item.id || item._id;
       if (slugOrId) {
         const res = await commentairesApi.getCommentaireBySlug(slugOrId);
         if (res?.data) {
           const fullData = res.data.data || res.data;
-          setPreviewItem((prev) => ({
-            ...prev,
-            ...fullData,
-          }));
+          fullItem = { ...fullItem, ...fullData };
         }
       }
+
+      const currentContent = extractHtmlContent(fullItem);
+      if (!currentContent || currentContent.length < 200) {
+        const wpFull = await fetchFullWordPressContent({
+          slug: item.slug,
+          url: item.originalUrl,
+          type: 'commentaire',
+        });
+        if (wpFull?.content) {
+          fullItem.content = wpFull.content;
+        }
+      }
+
+      setPreviewItem(fullItem);
     } catch (err) {
       console.warn('Failed to fetch full commentaire detail for preview:', err);
     } finally {
@@ -123,7 +136,7 @@ export default function CommentariesPage() {
   };
 
   const openEditModal = async (item) => {
-    const initialContent = extractHtmlContent(item);
+    let initialContent = extractHtmlContent(item);
     setEditingItem(item);
     setFormData({
       author: getAuthorName(item.author),
@@ -136,24 +149,39 @@ export default function CommentariesPage() {
     });
     setIsModalOpen(true);
 
-    if (!initialContent && (item.slug || item.id || item._id)) {
-      try {
-        const res = await commentairesApi.getCommentaireBySlug(item.slug || item.id || item._id);
+    try {
+      let fullItem = { ...item };
+      const slugOrId = item.slug || item.id || item._id;
+      if (slugOrId) {
+        const res = await commentairesApi.getCommentaireBySlug(slugOrId);
         if (res?.data) {
-          const fullData = res.data.data || res.data;
-          const fullContent = extractHtmlContent(fullData);
-          if (fullContent) {
-            setFormData((prev) => ({
-              ...prev,
-              content: fullContent,
-            }));
-          }
+          fullItem = { ...fullItem, ...(res.data.data || res.data) };
         }
-      } catch (err) {
-        console.warn('Failed to fetch full commentaire detail for editor:', err);
       }
+
+      let richContent = extractHtmlContent(fullItem);
+      if (!richContent || richContent.length < 200) {
+        const wpFull = await fetchFullWordPressContent({
+          slug: item.slug,
+          url: item.originalUrl,
+          type: 'commentaire',
+        });
+        if (wpFull?.content) {
+          richContent = wpFull.content;
+        }
+      }
+
+      if (richContent) {
+        setFormData((prev) => ({
+          ...prev,
+          content: richContent,
+        }));
+      }
+    } catch (err) {
+      console.warn('Failed to fetch full commentaire detail for editor:', err);
     }
   };
+
 
   const handleSyncWordPress = async () => {
     if (!confirm('Sync latest commentaires from WordPress (/api/v1/commentaires/sync-wordpress)?')) return;

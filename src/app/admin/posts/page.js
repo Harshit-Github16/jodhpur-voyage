@@ -11,6 +11,7 @@ import {
   extractCoverImage,
   extractAuthorName,
   extractPlainText,
+  fetchFullWordPressContent,
 } from '@/utils/contentHelper';
 import {
   Newspaper,
@@ -23,6 +24,8 @@ import {
   Eye,
   Tag,
   User,
+  Image as ImageIcon,
+  Sparkles,
   X,
   FileText,
   Filter,
@@ -32,14 +35,13 @@ import {
 const CATEGORIES = [
   'All',
   'Rajasthan',
-  'News & Updates',
+  'Desert Expeditions',
+  'Heritage & Culture',
   'Travel Tips',
-  'Culture & Heritage',
-  'Festivals',
-  'Announcements',
+  'News & Updates',
 ];
 
-const STATUS_OPTIONS = ['All', 'Published', 'Draft'];
+const STATUS_OPTIONS = ['All', 'Published', 'Draft', 'Archived'];
 
 export default function PostsPage() {
   const {
@@ -71,7 +73,7 @@ export default function PostsPage() {
     excerpt: '',
     content: '',
     author: 'Admin',
-    authorRole: 'Editor',
+    authorRole: 'Editorial Team',
     coverImage: '',
     readTime: '4 min read',
     tags: '',
@@ -81,31 +83,48 @@ export default function PostsPage() {
 
   const getAuthorName = (author) => extractAuthorName(author, 'Admin');
 
-  const getAuthorRole = (author, authorRole) => {
+  const getAuthorRole = (author, fallbackRole) => {
     if (typeof author === 'object' && author?.role) return author.role;
-    return authorRole || 'Editor';
+    return fallbackRole || 'Editor';
   };
 
   const getAuthorAvatar = (author, authorAvatar) => {
     if (typeof author === 'object' && author?.avatar) return author.avatar;
-    return authorAvatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80';
+    return (
+      authorAvatar ||
+      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=100&q=80'
+    );
   };
 
   const handleOpenPreview = async (post) => {
     setPreviewPost(post);
     setPreviewLoading(true);
     try {
+      let fullPost = { ...post };
       const slugOrId = post.slug || post.id || post._id;
       if (slugOrId) {
         const res = await postsApi.getPostBySlug(slugOrId);
         if (res?.data) {
-          const fullData = res.data.data || res.data;
-          setPreviewPost((prev) => ({
-            ...prev,
-            ...fullData,
-          }));
+          const fetched = res.data.data || res.data;
+          fullPost = { ...fullPost, ...fetched };
         }
       }
+
+      // If content is empty or short header widget only, fetch full original article
+      const currentContent = extractHtmlContent(fullPost);
+      if (!currentContent || currentContent.length < 250) {
+        const wpFull = await fetchFullWordPressContent({
+          slug: post.slug,
+          url: post.originalUrl,
+          type: 'post',
+        });
+        if (wpFull?.content) {
+          fullPost.content = wpFull.content;
+          if (wpFull.coverImage) fullPost.coverImage = wpFull.coverImage;
+        }
+      }
+
+      setPreviewPost(fullPost);
     } catch (err) {
       console.warn('Failed to fetch full post detail for preview:', err);
     } finally {
@@ -133,17 +152,18 @@ export default function PostsPage() {
   };
 
   const openEditModal = async (post) => {
-    const initialContent = extractHtmlContent(post);
+    let initialContent = extractHtmlContent(post);
+    let initialCover = extractCoverImage(post) || '';
     setEditingPost(post);
     setFormData({
       title: extractTitle(post.title || post),
       slug: post.slug || '',
       category: post.category || 'Rajasthan',
-      excerpt: extractPlainText(post.excerpt || initialContent, 160),
+      excerpt: extractPlainText(post.excerpt || post.summary || initialContent, 160),
       content: initialContent,
       author: getAuthorName(post.author),
       authorRole: getAuthorRole(post.author, post.authorRole),
-      coverImage: extractCoverImage(post) || '',
+      coverImage: initialCover,
       readTime: post.readTime || '4 min read',
       tags: Array.isArray(post.tags) ? post.tags.join(', ') : (post.tags || ''),
       status: post.status || 'Published',
@@ -151,23 +171,39 @@ export default function PostsPage() {
     });
     setIsModalOpen(true);
 
-    if (!initialContent && (post.slug || post.id || post._id)) {
-      try {
-        const res = await postsApi.getPostBySlug(post.slug || post.id || post._id);
+    try {
+      let fullPost = { ...post };
+      const slugOrId = post.slug || post.id || post._id;
+      if (slugOrId) {
+        const res = await postsApi.getPostBySlug(slugOrId);
         if (res?.data) {
-          const fullData = res.data.data || res.data;
-          const fullContent = extractHtmlContent(fullData);
-          if (fullContent) {
-            setFormData((prev) => ({
-              ...prev,
-              content: fullContent,
-              excerpt: prev.excerpt || extractPlainText(fullData.excerpt || fullContent, 160),
-            }));
-          }
+          fullPost = { ...fullPost, ...(res.data.data || res.data) };
         }
-      } catch (err) {
-        console.warn('Failed to fetch full post detail for editor:', err);
       }
+
+      let richContent = extractHtmlContent(fullPost);
+      if (!richContent || richContent.length < 250) {
+        const wpFull = await fetchFullWordPressContent({
+          slug: post.slug,
+          url: post.originalUrl,
+          type: 'post',
+        });
+        if (wpFull?.content) {
+          richContent = wpFull.content;
+          if (wpFull.coverImage) initialCover = wpFull.coverImage;
+        }
+      }
+
+      if (richContent) {
+        setFormData((prev) => ({
+          ...prev,
+          content: richContent,
+          coverImage: prev.coverImage || initialCover,
+          excerpt: prev.excerpt || extractPlainText(fullPost.excerpt || richContent, 160),
+        }));
+      }
+    } catch (err) {
+      console.warn('Failed to fetch full post detail for editor:', err);
     }
   };
 

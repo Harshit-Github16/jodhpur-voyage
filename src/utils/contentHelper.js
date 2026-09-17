@@ -269,3 +269,30 @@ export const extractPlainText = (htmlOrText, maxLength = 160) => {
   return plain;
 };
 
+/**
+ * Fetches the complete, untruncated WordPress article content and real cover image from the live site
+ */
+export const fetchFullWordPressContent = async ({ slug, url, type = 'blog' }) => {
+  if (!slug && !url) return null;
+  try {
+    const params = new URLSearchParams();
+    if (slug) params.set('slug', slug);
+    if (url) params.set('url', url);
+    if (type) params.set('type', type);
+
+    const res = await fetch(`/api/wordpress-content?${params.toString()}`);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (data && data.success && data.content) {
+      return {
+        content: data.content,
+        coverImage: data.coverImage || null,
+        url: data.url || null,
+      };
+    }
+  } catch (err) {
+    console.warn('Failed to fetch full WordPress content:', err);
+  }
+  return null;
+};
+

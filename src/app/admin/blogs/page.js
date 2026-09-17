@@ -11,6 +11,7 @@ import {
   extractCoverImage,
   extractAuthorName,
   extractPlainText,
+  fetchFullWordPressContent,
 } from '@/utils/contentHelper';
 import {
   BookOpen,
@@ -40,8 +41,19 @@ const CATEGORIES = [
   'Photography',
 ];
 
-export default function BlogsManagementPage() {
-  const { blogs, loading, selectedCategory, setSelectedCategory, searchQuery, setSearchQuery, addBlog, updateBlog, deleteBlog, syncWordPress } = useBlogs();
+export default function BlogsPage() {
+  const {
+    blogs,
+    loading,
+    selectedCategory,
+    setSelectedCategory,
+    searchQuery,
+    setSearchQuery,
+    addBlog,
+    updateBlog,
+    deleteBlog,
+    syncWordPress,
+  } = useBlogs();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBlog, setEditingBlog] = useState(null);
@@ -63,21 +75,22 @@ export default function BlogsManagementPage() {
     category: 'Travel Guide',
     excerpt: '',
     content: '',
-    author: 'Harshit Panigrahi',
-    authorRole: 'Travel Curator',
+    author: 'Admin (superadmin)',
+    authorRole: 'Travel Guide & Editor',
     coverImage: '',
     readTime: '5 min read',
     tags: '',
     status: 'Published',
-    featured: false,
+    featured: true,
+    metaTitle: '',
+    metaDescription: '',
   });
 
-  // Helper functions for author resolution
-  const getAuthorName = (author) => extractAuthorName(author, 'Admin');
+  const getAuthorName = (author) => extractAuthorName(author, 'Jodhpur Voyage');
 
-  const getAuthorRole = (author, authorRole) => {
+  const getAuthorRole = (author, fallbackRole) => {
     if (typeof author === 'object' && author?.role) return author.role;
-    return authorRole || 'Travel Curator';
+    return fallbackRole || 'Travel Specialist';
   };
 
   const getAuthorAvatar = (author, authorAvatar) => {
@@ -89,17 +102,31 @@ export default function BlogsManagementPage() {
     setPreviewBlog(blog);
     setPreviewLoading(true);
     try {
+      let fullBlog = { ...blog };
       const slugOrId = blog.slug || blog.id || blog._id;
       if (slugOrId) {
         const res = await blogsApi.getBlogById(slugOrId);
         if (res?.data) {
-          const fullData = res.data.data || res.data;
-          setPreviewBlog((prev) => ({
-            ...prev,
-            ...fullData,
-          }));
+          const fetched = res.data.data || res.data;
+          fullBlog = { ...fullBlog, ...fetched };
         }
       }
+
+      // If content is empty or short header widget only, fetch full original article
+      const currentContent = extractHtmlContent(fullBlog);
+      if (!currentContent || currentContent.length < 250) {
+        const wpFull = await fetchFullWordPressContent({
+          slug: blog.slug,
+          url: blog.originalUrl,
+          type: 'blog',
+        });
+        if (wpFull?.content) {
+          fullBlog.content = wpFull.content;
+          if (wpFull.coverImage) fullBlog.coverImage = wpFull.coverImage;
+        }
+      }
+
+      setPreviewBlog(fullBlog);
     } catch (err) {
       console.warn('Failed to fetch full blog detail for preview:', err);
     } finally {
@@ -122,12 +149,15 @@ export default function BlogsManagementPage() {
       tags: 'Jodhpur, Rajasthan, Travel, Guide',
       status: 'Published',
       featured: true,
+      metaTitle: '',
+      metaDescription: '',
     });
     setIsModalOpen(true);
   };
 
   const openEditModal = async (blog) => {
-    const initialContent = extractHtmlContent(blog);
+    let initialContent = extractHtmlContent(blog);
+    let initialCover = extractCoverImage(blog) || '';
     setEditingBlog(blog);
     setFormData({
       title: extractTitle(blog.title || blog),
@@ -137,31 +167,49 @@ export default function BlogsManagementPage() {
       content: initialContent,
       author: getAuthorName(blog.author),
       authorRole: getAuthorRole(blog.author, blog.authorRole),
-      coverImage: extractCoverImage(blog) || '',
+      coverImage: initialCover,
       readTime: blog.readTime || '5 min read',
       tags: Array.isArray(blog.tags) ? blog.tags.join(', ') : (blog.tags || ''),
       status: blog.status || 'Published',
       featured: Boolean(blog.featured),
+      metaTitle: blog.metaTitle || '',
+      metaDescription: blog.metaDescription || '',
     });
     setIsModalOpen(true);
 
-    if (!initialContent && (blog.slug || blog.id || blog._id)) {
-      try {
-        const res = await blogsApi.getBlogById(blog.slug || blog.id || blog._id);
+    try {
+      let fullBlog = { ...blog };
+      const slugOrId = blog.slug || blog.id || blog._id;
+      if (slugOrId) {
+        const res = await blogsApi.getBlogById(slugOrId);
         if (res?.data) {
-          const fullData = res.data.data || res.data;
-          const fullContent = extractHtmlContent(fullData);
-          if (fullContent) {
-            setFormData((prev) => ({
-              ...prev,
-              content: fullContent,
-              excerpt: prev.excerpt || extractPlainText(fullData.excerpt || fullContent, 160),
-            }));
-          }
+          fullBlog = { ...fullBlog, ...(res.data.data || res.data) };
         }
-      } catch (err) {
-        console.warn('Failed to fetch full blog detail for editor:', err);
       }
+
+      let richContent = extractHtmlContent(fullBlog);
+      if (!richContent || richContent.length < 250) {
+        const wpFull = await fetchFullWordPressContent({
+          slug: blog.slug,
+          url: blog.originalUrl,
+          type: 'blog',
+        });
+        if (wpFull?.content) {
+          richContent = wpFull.content;
+          if (wpFull.coverImage) initialCover = wpFull.coverImage;
+        }
+      }
+
+      if (richContent) {
+        setFormData((prev) => ({
+          ...prev,
+          content: richContent,
+          coverImage: prev.coverImage || initialCover,
+          excerpt: prev.excerpt || extractPlainText(fullBlog.excerpt || richContent, 160),
+        }));
+      }
+    } catch (err) {
+      console.warn('Failed to fetch full blog detail for editor:', err);
     }
   };
 
