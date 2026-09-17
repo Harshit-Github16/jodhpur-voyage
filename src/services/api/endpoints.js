@@ -71,13 +71,34 @@ export const API_ENDPOINTS = {
     DELETE: (id) => `/reviews/${id}`,
   },
 
-  // 8. Blogs & Stories (/blogs)
+  // 8. Posts API (/posts)
+  POSTS: {
+    LIST: '/posts',
+    DETAIL: (idOrSlug) => `/posts/${idOrSlug}`,
+    CREATE: '/posts',
+    UPDATE: (id) => `/posts/${id}`,
+    DELETE: (id) => `/posts/${id}`,
+    SYNC_WP: '/posts/sync-wordpress',
+  },
+
+  // 9. Blogs API (/blogs)
   BLOGS: {
     LIST: '/blogs',
     DETAIL: (idOrSlug) => `/blogs/${idOrSlug}`,
     CREATE: '/blogs',
     UPDATE: (id) => `/blogs/${id}`,
     DELETE: (id) => `/blogs/${id}`,
+    SYNC_WP: '/blogs/sync-wordpress',
+  },
+
+  // 10. Commentaires API (/commentaires)
+  COMMENTAIRES: {
+    LIST: '/commentaires',
+    DETAIL: (idOrSlug) => `/commentaires/${idOrSlug}`,
+    CREATE: '/commentaires',
+    UPDATE: (id) => `/commentaires/${id}`,
+    DELETE: (id) => `/commentaires/${id}`,
+    SYNC_WP: '/commentaires/sync-wordpress',
   },
 
   // 9. Customers (/customers)

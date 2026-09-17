@@ -43,6 +43,14 @@ export const blogsApi = {
   deleteBlog: async (id) => {
     return apiClient.delete(API_ENDPOINTS.BLOGS.DELETE(id));
   },
+
+  /**
+   * Sync WordPress blogs
+   * POST /blogs/sync-wordpress
+   */
+  syncWordPress: async (syncData = {}) => {
+    return apiClient.post(API_ENDPOINTS.BLOGS.SYNC_WP, syncData);
+  },
 };
 
 export default blogsApi;

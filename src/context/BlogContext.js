@@ -112,6 +112,24 @@ export function BlogProvider({ children }) {
     [adminContext]
   );
 
+  const syncWordPress = useCallback(
+    async (payload = {}) => {
+      setLoading(true);
+      try {
+        const res = await blogsApi.syncWordPress(payload);
+        await fetchBlogs();
+        adminContext?.addToast(res?.message || 'WordPress blogs synchronized successfully!', 'success');
+        return { success: true, data: res };
+      } catch (err) {
+        adminContext?.addToast(err?.message || 'Failed to sync WordPress blogs', 'error');
+        return { success: false, message: err?.message };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [adminContext, fetchBlogs]
+  );
+
   return (
     <BlogContext.Provider
       value={{
@@ -126,6 +144,7 @@ export function BlogProvider({ children }) {
         addBlog,
         updateBlog,
         deleteBlog,
+        syncWordPress,
       }}
     >
       {children}

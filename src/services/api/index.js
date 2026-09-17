@@ -13,6 +13,8 @@ export { bookingsApi } from './bookingsApi';
 export { enquiriesApi } from './enquiriesApi';
 export { reviewsApi } from './reviewsApi';
 export { blogsApi } from './blogsApi';
+export { postsApi } from './postsApi';
+export { commentairesApi } from './commentairesApi';
 export { customersApi } from './customersApi';
 export { usersApi } from './usersApi';
 export { teamApi } from './teamApi';

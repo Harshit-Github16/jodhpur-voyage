@@ -24,6 +24,8 @@ import {
   Settings,
   ChevronLeft,
   X,
+  Newspaper,
+  MessageSquareText,
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -75,6 +77,12 @@ export function Sidebar() {
           icon: BookOpen,
           badge: null,
         },
+        {
+          name: 'Posts',
+          href: '/admin/posts',
+          icon: Newspaper,
+          badge: null,
+        },
       ],
     },
     {
@@ -86,6 +94,12 @@ export function Sidebar() {
           icon: MessageSquare,
           badge: newEnquiriesCount > 0 ? `${newEnquiriesCount} New` : null,
           badgeStyle: 'bg-amber-500 text-slate-950 font-black shadow-xs',
+        },
+        {
+          name: 'Commentaries',
+          href: '/admin/commentaries',
+          icon: MessageSquareText,
+          badge: null,
         },
         {
           name: 'Reviews & Ratings',
