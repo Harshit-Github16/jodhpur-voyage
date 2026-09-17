@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { useBlogs } from '@/context/BlogContext';
 import ImageUploader from '@/components/common/ImageUploader';
+import RichTextEditor from '@/components/common/RichTextEditor';
 import {
   BookOpen,
   Plus,
@@ -331,7 +332,7 @@ export default function BlogsManagementPage() {
       {/* Add / Edit Blog Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-3xl max-h-[92vh] flex flex-col overflow-hidden">
             {/* Header */}
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <div className="flex items-center gap-2">
@@ -453,19 +454,14 @@ export default function BlogsManagementPage() {
                 />
               </div>
 
-              <div>
-                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                  Full Article Body (Markdown / Content) *
-                </label>
-                <textarea
-                  rows={6}
-                  required
-                  value={formData.content}
-                  onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                  placeholder="Write full article here. Supports paragraphs, bullet points, recommendations..."
-                  className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a] font-sans"
-                />
-              </div>
+              <RichTextEditor
+                label="Full Article Body (Rich Text Editor / HTML)"
+                required={true}
+                value={formData.content}
+                onChange={(html) => setFormData((prev) => ({ ...prev, content: html }))}
+                placeholder="Write full article here. Supports formatting, headings, bold, colors, bullet points, recommendations..."
+                minHeight="260px"
+              />
 
               <div>
                 <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
@@ -555,7 +551,7 @@ export default function BlogsManagementPage() {
       {/* Article Preview Drawer */}
       {previewBlog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
               <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#0f172a] text-white">
                 {previewBlog.category}
@@ -572,7 +568,7 @@ export default function BlogsManagementPage() {
               <img
                 src={previewBlog.coverImage}
                 alt={previewBlog.title}
-                className="w-full h-56 rounded-xl object-cover"
+                className="w-full h-64 rounded-xl object-cover"
               />
 
               <h2 className="text-xl font-black text-slate-900 leading-snug">
@@ -587,9 +583,10 @@ export default function BlogsManagementPage() {
                 <span>{previewBlog.publishedAt?.slice(0, 10) || previewBlog.createdAt?.slice(0, 10) || '2026-09-08'}</span>
               </div>
 
-              <div className="text-xs text-slate-700 whitespace-pre-line leading-relaxed">
-                {previewBlog.content || previewBlog.excerpt}
-              </div>
+              <div
+                className="blog-html-content"
+                dangerouslySetInnerHTML={{ __html: previewBlog.content || previewBlog.excerpt }}
+              />
             </div>
           </div>
         </div>
