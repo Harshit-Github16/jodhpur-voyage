@@ -5,9 +5,7 @@ import Link from 'next/link';
 import { useBookings } from '@/context/BookingContext';
 import { useTours } from '@/context/TourContext';
 import { useCities } from '@/context/CityContext';
-import { useCustomers } from '@/context/CustomerContext';
 import { useEnquiries } from '@/context/EnquiryContext';
-import { useReviews } from '@/context/ReviewContext';
 import { useAuth } from '@/context/AuthContext';
 import StatCard from '@/components/admin/StatCard';
 import StatusBadge from '@/components/admin/StatusBadge';
@@ -15,14 +13,12 @@ import BookingDetailModal from '@/components/admin/BookingDetailModal';
 import {
   IndianRupee,
   Compass,
-  Users,
   Plus,
   ArrowRight,
   MapPin,
   ShoppingBag,
   Package,
   MessageSquare,
-  Star,
   CheckCircle2,
   AlertCircle,
   Clock,
@@ -35,9 +31,7 @@ export default function AdminDashboardPage() {
   const { bookings, metrics, updateStatus } = useBookings();
   const { tours } = useTours();
   const { cities } = useCities();
-  const { customers } = useCustomers();
   const { enquiries, newCount, updateStatus: updateEnquiryStatus, exportToCSV } = useEnquiries();
-  const { reviews, pendingCount } = useReviews();
 
   const [selectedBooking, setSelectedBooking] = useState(null);
 
@@ -127,7 +121,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Action Center / Pending Tasks Banner */}
-      {(newCount > 0 || pendingCount > 0) && (
+      {newCount > 0 && (
         <div className="bg-linear-to-r from-amber-50 via-orange-50/70 to-amber-50 border border-amber-200/90 rounded-xl p-4 shadow-sm">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
             <div className="flex items-start sm:items-center gap-3">
@@ -136,30 +130,20 @@ export default function AdminDashboardPage() {
               </div>
               <div>
                 <h3 className="text-xs font-black text-slate-900 uppercase tracking-wider">
-                  Action Required: Pending Inquiries & Reviews
+                  Action Required: Pending Inquiries
                 </h3>
                 <p className="text-xs text-slate-700 mt-0.5">
-                  You have <strong className="text-amber-900">{newCount} new guest inquiries</strong> awaiting response and <strong className="text-amber-900">{pendingCount} reviews</strong> waiting for approval.
+                  You have <strong className="text-amber-900">{newCount} new guest inquiries</strong> awaiting response.
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-2 shrink-0">
-              {newCount > 0 && (
-                <Link
-                  href="/admin/enquiries"
-                  className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-colors shadow-2xs"
-                >
-                  Respond ({newCount})
-                </Link>
-              )}
-              {pendingCount > 0 && (
-                <Link
-                  href="/admin/reviews"
-                  className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-2xs"
-                >
-                  Moderate ({pendingCount})
-                </Link>
-              )}
+              <Link
+                href="/admin/enquiries"
+                className="px-3 py-1.5 rounded-lg bg-amber-500 hover:bg-amber-600 text-slate-950 text-xs font-bold transition-colors shadow-2xs"
+              >
+                Respond ({newCount})
+              </Link>
             </div>
           </div>
         </div>
@@ -366,28 +350,6 @@ export default function AdminDashboardPage() {
               <div className="flex items-center gap-2.5">
                 <Compass className="w-4 h-4 text-amber-600" />
                 <span>Publish New Blog Post</span>
-              </div>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-            </Link>
-
-            <Link
-              href="/admin/reviews"
-              className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 hover:bg-amber-50 border border-slate-100 transition-all text-xs font-bold text-slate-800"
-            >
-              <div className="flex items-center gap-2.5">
-                <Star className="w-4 h-4 text-amber-600" />
-                <span>Customer Reviews ({reviews.length})</span>
-              </div>
-              <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
-            </Link>
-
-            <Link
-              href="/admin/team"
-              className="flex items-center justify-between p-2.5 rounded-lg bg-slate-50 hover:bg-amber-50 border border-slate-100 transition-all text-xs font-bold text-slate-800"
-            >
-              <div className="flex items-center gap-2.5">
-                <Users className="w-4 h-4 text-amber-600" />
-                <span>Manage Team & Guides</span>
               </div>
               <ArrowRight className="w-3.5 h-3.5 text-slate-400" />
             </Link>

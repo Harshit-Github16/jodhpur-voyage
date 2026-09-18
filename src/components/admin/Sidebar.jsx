@@ -6,7 +6,6 @@ import { usePathname } from 'next/navigation';
 import { useAdmin } from '@/context/AdminContext';
 import { useAuth } from '@/context/AuthContext';
 import { useEnquiries } from '@/context/EnquiryContext';
-import { useReviews } from '@/context/ReviewContext';
 import { useTours } from '@/context/TourContext';
 import { useCities } from '@/context/CityContext';
 import Logo from '@/components/common/Logo';
@@ -15,17 +14,14 @@ import {
   MapPin,
   Package,
   BookOpen,
-  Users,
   ShoppingBag,
   MessageSquare,
-  Star,
-  UserCheck,
-  ShieldCheck,
   Settings,
   ChevronLeft,
   X,
   Newspaper,
   MessageSquareText,
+  UsersRound,
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -34,7 +30,6 @@ export function Sidebar() {
   const { user } = useAuth();
 
   const { newCount: newEnquiriesCount } = useEnquiries();
-  const { pendingCount: pendingReviewsCount } = useReviews();
   const { tours } = useTours();
   const { cities } = useCities();
 
@@ -102,22 +97,20 @@ export function Sidebar() {
           badge: null,
         },
         {
-          name: 'Reviews & Ratings',
-          href: '/admin/reviews',
-          icon: Star,
-          badge: pendingReviewsCount > 0 ? `${pendingReviewsCount} Pending` : null,
-          badgeStyle: 'bg-rose-500 text-white font-black shadow-xs',
-        },
-        {
           name: 'Bookings & Orders',
           href: '/admin/orders',
           icon: ShoppingBag,
           badge: 'Live',
         },
+      ],
+    },
+    {
+      group: 'COMPANY',
+      items: [
         {
-          name: 'Customers',
-          href: '/admin/customers',
-          icon: Users,
+          name: 'Who We Are',
+          href: '/admin/who-we-are',
+          icon: UsersRound,
           badge: null,
         },
       ],
@@ -125,18 +118,6 @@ export function Sidebar() {
     {
       group: 'SYSTEM & SETTINGS',
       items: [
-        {
-          name: 'Team Members',
-          href: '/admin/team',
-          icon: UserCheck,
-          badge: null,
-        },
-        {
-          name: 'Staff & Roles',
-          href: '/admin/users',
-          icon: ShieldCheck,
-          badge: null,
-        },
         {
           name: 'General Settings',
           href: '/admin/settings',
