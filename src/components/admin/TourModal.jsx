@@ -10,7 +10,6 @@ export function TourModal({ isOpen, onClose, onSave, initialData = null }) {
     category: 'Heritage & History',
     duration: '3 Hours',
     price: '',
-    originalPrice: '',
     maxGroupSize: '15',
     location: '',
     description: '',
@@ -28,7 +27,6 @@ export function TourModal({ isOpen, onClose, onSave, initialData = null }) {
         category: initialData.category || 'Heritage & History',
         duration: initialData.duration || '3 Hours',
         price: initialData.price || '',
-        originalPrice: initialData.originalPrice || '',
         maxGroupSize: initialData.maxGroupSize || '15',
         location: initialData.location || '',
         description: initialData.description || '',
@@ -42,7 +40,6 @@ export function TourModal({ isOpen, onClose, onSave, initialData = null }) {
         category: 'Heritage & History',
         duration: '3 Hours',
         price: '',
-        originalPrice: '',
         maxGroupSize: '15',
         location: 'Jodhpur, Rajasthan',
         description: '',
@@ -62,7 +59,6 @@ export function TourModal({ isOpen, onClose, onSave, initialData = null }) {
     const payload = {
       ...formData,
       price: Number(formData.price),
-      originalPrice: formData.originalPrice ? Number(formData.originalPrice) : undefined,
       maxGroupSize: Number(formData.maxGroupSize),
       inclusions: formData.inclusions
         ? formData.inclusions.split(',').map((s) => s.trim()).filter(Boolean)

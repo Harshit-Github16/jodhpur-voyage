@@ -247,9 +247,9 @@ export default function CreateCityPage() {
       <div className="bg-white rounded-xl p-6 border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900">Destination & City Manager</h1>
+            <h1 className="text-xl font-bold text-slate-900">Destination Manager</h1>
             <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-              {cities.length} Total Cities
+              {cities.length} Total Destinations
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
@@ -281,7 +281,7 @@ export default function CreateCityPage() {
             className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold shadow-sm transition-colors"
           >
             <Plus className="w-4 h-4 text-amber-400" />
-            <span>Add City</span>
+            <span>Add Destination</span>
           </button>
         </div>
       </div>
@@ -345,7 +345,7 @@ export default function CreateCityPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
           <input
             type="text"
-            placeholder="Search destination cities by name, region, tags..."
+            placeholder="Search destinations by name, region, tags..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-9 pr-3 py-1.5 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
@@ -362,15 +362,15 @@ export default function CreateCityPage() {
           <h3 className="text-sm font-bold text-slate-900">No destinations found</h3>
           <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
             {searchQuery
-              ? `No cities match "${searchQuery}". Try a different keyword.`
-              : `No cities added to this category yet. Click below to add a city.`}
+              ? `No destinations match "${searchQuery}". Try a different keyword.`
+              : `No destinations added to this category yet. Click below to add a destination.`}
           </p>
           <button
             onClick={openAddModal}
             className="mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#0f172a] text-white text-xs font-semibold hover:bg-slate-800"
           >
             <Plus className="w-3.5 h-3.5 text-amber-400" />
-            <span>Add City to this Category</span>
+            <span>Add Destination to this Category</span>
           </button>
         </div>
       ) : (
@@ -467,12 +467,12 @@ export default function CreateCityPage() {
                     className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold transition-colors"
                   >
                     <Edit3 className="w-3.5 h-3.5" />
-                    <span>Edit City</span>
+                    <span>Edit Destination</span>
                   </button>
                   <button
                     onClick={() => deleteCity(city.id)}
                     className="p-1.5 rounded-lg text-slate-500 hover:text-rose-600 hover:bg-rose-50 transition-colors"
-                    title="Delete City"
+                    title="Delete Destination"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -676,7 +676,7 @@ export default function CreateCityPage() {
                 </div>
                 <div>
                   <h3 className="font-bold text-slate-900 text-sm">
-                    {editingCity ? `Edit ${editingCity.name} Content` : 'Create New City Destination'}
+                    {editingCity ? `Edit ${editingCity.name} Content` : 'Create New Destination'}
                   </h3>
                   <p className="text-[11px] text-slate-500">
                     Assign to a region category, configure titles, SEO meta, gallery, and FAQs.
@@ -757,38 +757,23 @@ export default function CreateCityPage() {
                 )}
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                    City Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    placeholder="e.g. Jodhpur, Tokyo, New York"
-                    className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                    State / Sub-District
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.state}
-                    onChange={(e) => setFormData({ ...formData, state: e.target.value })}
-                    placeholder="e.g. Rajasthan, Kanto, New York"
-                    className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
-                  />
-                </div>
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
+                  Destination Name *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  placeholder="e.g. Jodhpur, Tokyo, New York, Kochi"
+                  className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
+                />
               </div>
 
               <div>
                 <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                  City Tagline (Subtitle)
+                  Destination Tagline (Subtitle)
                 </label>
                 <input
                   type="text"
@@ -827,7 +812,7 @@ export default function CreateCityPage() {
               </div>
 
               <ImageUploader
-                label="City Banner Image"
+                label="Destination Banner Image"
                 required={true}
                 value={formData.bannerImage}
                 onChange={(val) => setFormData({ ...formData, bannerImage: val })}
@@ -853,7 +838,7 @@ export default function CreateCityPage() {
                   <div className="flex items-center gap-1.5">
                     <HelpCircle className="w-4 h-4 text-amber-600" />
                     <label className="font-bold text-slate-900 text-xs uppercase tracking-wide">
-                      City FAQ Builder
+                      Destination FAQ Builder
                     </label>
                   </div>
                   <button
@@ -940,7 +925,7 @@ export default function CreateCityPage() {
                   type="submit"
                   className="px-5 py-2 rounded-lg bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-bold shadow-sm"
                 >
-                  {editingCity ? 'Save City Changes' : 'Publish City'}
+                  {editingCity ? 'Save Destination Changes' : 'Publish Destination'}
                 </button>
               </div>
             </form>
