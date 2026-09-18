@@ -22,6 +22,7 @@ import {
   Newspaper,
   MessageSquareText,
   UsersRound,
+  GalleryHorizontalEnd,
 } from 'lucide-react';
 
 export function Sidebar() {
@@ -111,6 +112,12 @@ export function Sidebar() {
           name: 'Who We Are',
           href: '/admin/who-we-are',
           icon: UsersRound,
+          badge: null,
+        },
+        {
+          name: 'Hero Slider',
+          href: '/admin/hero-slider',
+          icon: GalleryHorizontalEnd,
           badge: null,
         },
       ],

@@ -136,6 +136,12 @@ export const API_ENDPOINTS = {
     UPDATE_SECTION: (section) => `/content/who-we-are/${section}`,
   },
 
+  // 12c. Hero Slider (/content/hero-slider)
+  HERO_SLIDER: {
+    GET: '/content/hero-slider',
+    UPDATE: '/content/hero-slider',
+  },
+
   // 13. Analytics & Dashboard Metrics (/analytics)
   ANALYTICS: {
     DASHBOARD: '/analytics/dashboard',

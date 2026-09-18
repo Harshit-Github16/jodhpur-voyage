@@ -12,6 +12,7 @@ import { CommentaireProvider } from './CommentaireContext';
 import { EnquiryProvider } from './EnquiryContext';
 import { WhoWeAreProvider } from './WhoWeAreContext';
 import { WhoWeAreContentProvider } from './WhoWeAreContentContext';
+import { HeroSliderProvider } from './HeroSliderContext';
 import { SettingsProvider } from './SettingsContext';
 
 export function AppProviders({ children }) {
@@ -28,7 +29,9 @@ export function AppProviders({ children }) {
                       <EnquiryProvider>
                         <WhoWeAreProvider>
                           <WhoWeAreContentProvider>
-                            {children}
+                            <HeroSliderProvider>
+                              {children}
+                            </HeroSliderProvider>
                           </WhoWeAreContentProvider>
                         </WhoWeAreProvider>
                       </EnquiryProvider>
