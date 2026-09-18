@@ -19,6 +19,7 @@ export { customersApi } from './customersApi';
 export { usersApi } from './usersApi';
 export { teamApi } from './teamApi';
 export { settingsApi } from './settingsApi';
+export { whoWeAreContentApi } from './whoWeAreContentApi';
 export { analyticsApi } from './analyticsApi';
 export { uploadApi } from './uploadApi';
 export { healthApi } from './healthApi';

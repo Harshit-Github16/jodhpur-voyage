@@ -11,6 +11,7 @@ import { PostProvider } from './PostContext';
 import { CommentaireProvider } from './CommentaireContext';
 import { EnquiryProvider } from './EnquiryContext';
 import { WhoWeAreProvider } from './WhoWeAreContext';
+import { WhoWeAreContentProvider } from './WhoWeAreContentContext';
 import { SettingsProvider } from './SettingsContext';
 
 export function AppProviders({ children }) {
@@ -26,7 +27,9 @@ export function AppProviders({ children }) {
                     <CommentaireProvider>
                       <EnquiryProvider>
                         <WhoWeAreProvider>
-                          {children}
+                          <WhoWeAreContentProvider>
+                            {children}
+                          </WhoWeAreContentProvider>
                         </WhoWeAreProvider>
                       </EnquiryProvider>
                     </CommentaireProvider>

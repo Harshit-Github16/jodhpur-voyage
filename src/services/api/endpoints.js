@@ -129,6 +129,12 @@ export const API_ENDPOINTS = {
     UPDATE: '/settings',
   },
 
+  // 12b. "Who We Are" Page Content (/content/who-we-are)
+  WHO_WE_ARE_CONTENT: {
+    GET: '/content/who-we-are',
+    UPDATE: '/content/who-we-are',
+  },
+
   // 13. Analytics & Dashboard Metrics (/analytics)
   ANALYTICS: {
     DASHBOARD: '/analytics/dashboard',
