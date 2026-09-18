@@ -133,6 +133,7 @@ export const API_ENDPOINTS = {
   WHO_WE_ARE_CONTENT: {
     GET: '/content/who-we-are',
     UPDATE: '/content/who-we-are',
+    UPDATE_SECTION: (section) => `/content/who-we-are/${section}`,
   },
 
   // 13. Analytics & Dashboard Metrics (/analytics)

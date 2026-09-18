@@ -174,6 +174,30 @@ export function WhoWeAreContentProvider({ children }) {
     [adminContext]
   );
 
+  const saveSection = useCallback(
+    async (sectionName, sectionData) => {
+      setSaving(true);
+      try {
+        const res = await whoWeAreContentApi.updateSection(sectionName, sectionData);
+        setContent(mergeWithDefaults(res?.data));
+        setSource(res?.source || 'local');
+        adminContext?.addToast(
+          res?.source === 'api'
+            ? `Section "${sectionName}" saved successfully!`
+            : `Section "${sectionName}" saved locally.`,
+          res?.source === 'api' ? 'success' : 'info'
+        );
+        return { success: true, source: res?.source };
+      } catch (err) {
+        adminContext?.addToast(err?.message || `Failed to save section ${sectionName}`, 'error');
+        return { success: false, message: err?.message };
+      } finally {
+        setSaving(false);
+      }
+    },
+    [adminContext]
+  );
+
   return (
     <WhoWeAreContentContext.Provider
       value={{
@@ -184,6 +208,7 @@ export function WhoWeAreContentProvider({ children }) {
         source,
         fetchContent,
         saveContent,
+        saveSection,
       }}
     >
       {children}

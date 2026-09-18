@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useBlogs } from '@/context/BlogContext';
 import { blogsApi } from '@/services/api/blogsApi';
 import ImageUploader from '@/components/common/ImageUploader';
@@ -30,6 +30,8 @@ import {
   FileText,
   Filter,
   RefreshCw,
+  MapPin,
+  Globe,
 } from 'lucide-react';
 
 const CATEGORIES = [
@@ -40,6 +42,8 @@ const CATEGORIES = [
   'Heritage & History',
   'Photography',
 ];
+
+const DEFAULT_DESTINATIONS = ['India', 'Nepal'];
 
 export default function BlogsPage() {
   const {
@@ -55,6 +59,23 @@ export default function BlogsPage() {
     syncWordPress,
   } = useBlogs();
 
+  const [destinationCategories, setDestinationCategories] = useState(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('jodhpur_admin_destination_categories');
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        }
+      } catch (e) {}
+    }
+    return DEFAULT_DESTINATIONS;
+  });
+
+  const [selectedDestination, setSelectedDestination] = useState('All');
+  const [isAddingDestination, setIsAddingDestination] = useState(false);
+  const [newDestinationInput, setNewDestinationInput] = useState('');
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingBlog, setEditingBlog] = useState(null);
   const [previewBlog, setPreviewBlog] = useState(null);
@@ -68,11 +89,30 @@ export default function BlogsPage() {
     setSyncing(false);
   };
 
+  const handleSaveNewDestination = (e) => {
+    if (e) e.preventDefault();
+    const trimmed = newDestinationInput.trim();
+    if (!trimmed) return;
+    if (!destinationCategories.some((d) => d.toLowerCase() === trimmed.toLowerCase())) {
+      const updated = [...destinationCategories, trimmed];
+      setDestinationCategories(updated);
+      if (typeof window !== 'undefined') {
+        try {
+          localStorage.setItem('jodhpur_admin_destination_categories', JSON.stringify(updated));
+        } catch (err) {}
+      }
+    }
+    setFormData((prev) => ({ ...prev, destinationCategory: trimmed }));
+    setNewDestinationInput('');
+    setIsAddingDestination(false);
+  };
+
   // Form State
   const [formData, setFormData] = useState({
     title: '',
     slug: '',
     category: 'Travel Guide',
+    destinationCategory: 'India',
     excerpt: '',
     content: '',
     author: 'Admin (superadmin)',
@@ -136,10 +176,13 @@ export default function BlogsPage() {
 
   const openAddModal = () => {
     setEditingBlog(null);
+    setIsAddingDestination(false);
+    setNewDestinationInput('');
     setFormData({
       title: '',
       slug: '',
       category: 'Travel Guide',
+      destinationCategory: 'India',
       excerpt: '',
       content: '',
       author: 'Admin (superadmin)',
@@ -159,10 +202,13 @@ export default function BlogsPage() {
     let initialContent = extractHtmlContent(blog);
     let initialCover = extractCoverImage(blog) || '';
     setEditingBlog(blog);
+    setIsAddingDestination(false);
+    setNewDestinationInput('');
     setFormData({
       title: extractTitle(blog.title || blog),
       slug: blog.slug || '',
       category: blog.category || 'Travel Guide',
+      destinationCategory: blog.destinationCategory || blog.destination || 'India',
       excerpt: extractPlainText(blog.excerpt || blog.summary || initialContent, 160),
       content: initialContent,
       author: getAuthorName(blog.author),
@@ -222,6 +268,8 @@ export default function BlogsPage() {
 
     const payload = {
       ...formData,
+      destinationCategory: formData.destinationCategory || 'India',
+      destination: formData.destinationCategory || 'India',
       author: {
         name: formData.author,
         role: formData.authorRole,
@@ -243,6 +291,15 @@ export default function BlogsPage() {
     setIsModalOpen(false);
   };
 
+  const filteredBlogs = blogs.filter((blog) => {
+    const matchesCategory =
+      selectedCategory === 'All' || blog.category === selectedCategory;
+    const dest = (blog.destinationCategory || blog.destination || 'India').toLowerCase();
+    const matchesDestination =
+      selectedDestination === 'All' || dest === selectedDestination.toLowerCase();
+    return matchesCategory && matchesDestination;
+  });
+
   return (
     <div className="space-y-6">
       {/* Header Bar */}
@@ -251,7 +308,7 @@ export default function BlogsPage() {
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-bold text-slate-900">Travel Articles & Blog Editor</h1>
             <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
-              {blogs.length} Published Articles
+              {filteredBlogs.length} {filteredBlogs.length === 1 ? 'Article' : 'Articles'}
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
@@ -272,7 +329,7 @@ export default function BlogsPage() {
 
           <button
             onClick={openAddModal}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold shadow-sm transition-colors"
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-semibold shadow-sm transition-colors cursor-pointer"
           >
             <Plus className="w-4 h-4 text-amber-400" />
             <span>Write New Article</span>
@@ -299,15 +356,46 @@ export default function BlogsPage() {
               <button
                 key={cat}
                 onClick={() => setSelectedCategory(cat)}
-                className={`px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors ${selectedCategory === cat
+                className={`px-3 py-1 rounded text-xs font-medium whitespace-nowrap transition-colors cursor-pointer ${
+                  selectedCategory === cat
                     ? 'bg-[#0f172a] text-white'
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
+                }`}
               >
                 {cat}
               </button>
             ))}
           </div>
+        </div>
+
+        {/* Destination Category Filter Pills */}
+        <div className="flex items-center gap-2 pt-2 border-t border-slate-100 flex-wrap">
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1">
+            <Globe className="w-3 h-3 text-amber-600" /> Destination:
+          </span>
+          <button
+            onClick={() => setSelectedDestination('All')}
+            className={`px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+              selectedDestination === 'All'
+                ? 'bg-amber-600 text-white shadow-2xs'
+                : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+            }`}
+          >
+            All Destinations
+          </button>
+          {destinationCategories.map((dest) => (
+            <button
+              key={dest}
+              onClick={() => setSelectedDestination(dest)}
+              className={`px-2.5 py-0.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                selectedDestination.toLowerCase() === dest.toLowerCase()
+                  ? 'bg-amber-600 text-white shadow-2xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              {dest}
+            </button>
+          ))}
         </div>
       </div>
 
@@ -318,21 +406,22 @@ export default function BlogsPage() {
             <div key={n} className="bg-white rounded-xl p-5 border border-slate-200 animate-pulse h-80" />
           ))}
         </div>
-      ) : blogs.length === 0 ? (
+      ) : filteredBlogs.length === 0 ? (
         <div className="bg-white rounded-xl p-12 text-center border border-slate-200 space-y-2">
           <BookOpen className="w-8 h-8 text-slate-300 mx-auto" />
           <h3 className="font-bold text-slate-900 text-sm">No blog articles found</h3>
-          <p className="text-xs text-slate-500">Try adjusting your category filter or search keywords.</p>
+          <p className="text-xs text-slate-500">Try adjusting your category/destination filter or search keywords.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {blogs.map((blog, idx) => {
+          {filteredBlogs.map((blog, idx) => {
             const blogId = blog.id || blog._id;
             const authorName = getAuthorName(blog.author);
             const authorAvatar = getAuthorAvatar(blog.author, blog.authorAvatar);
             const coverImg = extractCoverImage(blog, idx);
             const blogTitle = extractTitle(blog.title || blog);
             const blogExcerpt = extractPlainText(blog.excerpt || blog.content || blog.summary, 140);
+            const destCat = blog.destinationCategory || blog.destination || 'India';
 
             return (
               <div
@@ -349,9 +438,13 @@ export default function BlogsPage() {
                     }}
                     className="w-full h-full object-cover"
                   />
-                  <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                  <div className="absolute top-3 left-3 flex items-center gap-1.5 flex-wrap">
                     <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#0f172a]/90 text-white shadow-sm">
                       {blog.category || 'Travel Guide'}
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500 text-slate-950 shadow-2xs flex items-center gap-0.5">
+                      <MapPin className="w-2.5 h-2.5" />
+                      {destCat}
                     </span>
                     {blog.featured && (
                       <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-500 text-white shadow-2xs">
@@ -362,10 +455,11 @@ export default function BlogsPage() {
 
                   <div className="absolute top-3 right-3">
                     <span
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${blog.status === 'Published'
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                        blog.status === 'Published'
                           ? 'bg-emerald-100 text-emerald-800'
                           : 'bg-slate-100 text-slate-700'
-                        }`}
+                      }`}
                     >
                       {blog.status || 'Published'}
                     </span>
@@ -424,21 +518,21 @@ export default function BlogsPage() {
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleOpenPreview(blog)}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
                         title="Preview Article"
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => openEditModal(blog)}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors"
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 transition-colors cursor-pointer"
                         title="Edit Article"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => deleteBlog(blogId)}
-                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 transition-colors"
+                        className="p-1.5 rounded-lg bg-slate-100 hover:bg-rose-50 hover:text-rose-600 text-slate-700 transition-colors cursor-pointer"
                         title="Delete Article"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -473,7 +567,7 @@ export default function BlogsPage() {
               </div>
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-slate-400 hover:text-slate-700 p-1"
+                className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -495,7 +589,8 @@ export default function BlogsPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Category */}
                 <div>
                   <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
                     Category
@@ -503,7 +598,7 @@ export default function BlogsPage() {
                   <select
                     value={formData.category}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                    className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a]"
+                    className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a] font-medium"
                   >
                     <option value="Travel Guide">Travel Guide</option>
                     <option value="Desert Expeditions">Desert Expeditions</option>
@@ -513,6 +608,85 @@ export default function BlogsPage() {
                   </select>
                 </div>
 
+                {/* Destination Category */}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block font-bold text-slate-700 uppercase tracking-wider text-[10px]">
+                      Destination Category
+                    </label>
+                    {!isAddingDestination && (
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingDestination(true)}
+                        className="text-[10px] font-bold text-amber-700 hover:text-amber-800 flex items-center gap-0.5 hover:underline cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" /> Add New
+                      </button>
+                    )}
+                  </div>
+
+                  {isAddingDestination ? (
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="text"
+                        autoFocus
+                        value={newDestinationInput}
+                        onChange={(e) => setNewDestinationInput(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleSaveNewDestination();
+                          } else if (e.key === 'Escape') {
+                            setIsAddingDestination(false);
+                            setNewDestinationInput('');
+                          }
+                        }}
+                        placeholder="e.g. Bhutan"
+                        className="w-full px-2.5 py-1.5 bg-white text-xs text-slate-900 rounded-lg border border-amber-400 focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      />
+                      <button
+                        type="button"
+                        onClick={handleSaveNewDestination}
+                        className="px-2.5 py-1.5 bg-[#0f172a] hover:bg-slate-800 text-amber-400 text-[11px] font-bold rounded-lg shrink-0 cursor-pointer"
+                      >
+                        Add
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsAddingDestination(false);
+                          setNewDestinationInput('');
+                        }}
+                        className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg shrink-0 cursor-pointer"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  ) : (
+                    <select
+                      value={formData.destinationCategory}
+                      onChange={(e) => {
+                        if (e.target.value === '__ADD_NEW__') {
+                          setIsAddingDestination(true);
+                        } else {
+                          setFormData({ ...formData, destinationCategory: e.target.value });
+                        }
+                      }}
+                      className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-[#0f172a] font-medium"
+                    >
+                      {destinationCategories.map((dest) => (
+                        <option key={dest} value={dest}>
+                          {dest}
+                        </option>
+                      ))}
+                      <option value="__ADD_NEW__" className="font-bold text-amber-700">
+                        + Add New Destination...
+                      </option>
+                    </select>
+                  )}
+                </div>
+
+                {/* Estimated Read Time */}
                 <div>
                   <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
                     Estimated Read Time
@@ -655,13 +829,13 @@ export default function BlogsPage() {
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100"
+                  className="px-3.5 py-2 rounded-lg border border-slate-200 text-xs font-semibold text-slate-700 hover:bg-slate-100 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-lg bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-bold shadow-sm"
+                  className="px-5 py-2 rounded-lg bg-[#0f172a] hover:bg-slate-800 text-white text-xs font-bold shadow-sm cursor-pointer"
                 >
                   {editingBlog ? 'Save Article' : 'Publish Article'}
                 </button>
@@ -676,12 +850,18 @@ export default function BlogsPage() {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-xs">
           <div className="bg-white rounded-2xl shadow-xl border border-slate-200 w-full max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-200 flex items-center justify-between bg-slate-50">
-              <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#0f172a] text-white">
-                {previewBlog.category}
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-[#0f172a] text-white">
+                  {previewBlog.category}
+                </span>
+                <span className="px-2.5 py-0.5 rounded text-[11px] font-bold bg-amber-500 text-slate-950 flex items-center gap-1">
+                  <MapPin className="w-3 h-3" />
+                  {previewBlog.destinationCategory || previewBlog.destination || 'India'}
+                </span>
+              </div>
               <button
                 onClick={() => setPreviewBlog(null)}
-                className="text-slate-400 hover:text-slate-700 p-1"
+                className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>

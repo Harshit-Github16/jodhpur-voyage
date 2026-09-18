@@ -70,6 +70,27 @@ export const whoWeAreContentApi = {
       return { data: content, source: 'local' };
     }
   },
+
+  /**
+   * Update single section of "Who We Are" page content.
+   * PATCH /content/who-we-are/:section  (falls back to localStorage merge)
+   */
+  updateSection: async (section, sectionData) => {
+    const current = readLocal() || {};
+    const merged = { ...current, [section]: sectionData };
+    writeLocal(merged);
+    try {
+      const res = await apiClient.patch(
+        API_ENDPOINTS.WHO_WE_ARE_CONTENT.UPDATE_SECTION(section),
+        sectionData
+      );
+      const data = res?.data?.data || res?.data || merged;
+      writeLocal(data);
+      return { data, source: 'api' };
+    } catch (e) {
+      return { data: merged, source: 'local' };
+    }
+  },
 };
 
 export default whoWeAreContentApi;
