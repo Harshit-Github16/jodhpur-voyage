@@ -2,14 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import ImageUploader from '@/components/common/ImageUploader';
-import { X, MapPin, Clock, Users, IndianRupee } from 'lucide-react';
+import { X, MapPin, Clock, Users } from 'lucide-react';
 
 export function TourModal({ isOpen, onClose, onSave, initialData = null }) {
   const [formData, setFormData] = useState({
     title: '',
     category: 'Heritage & History',
     duration: '3 Hours',
-    price: '',
     maxGroupSize: '15',
     location: '',
     description: '',
@@ -26,7 +25,6 @@ export function TourModal({ isOpen, onClose, onSave, initialData = null }) {
         title: initialData.title || '',
         category: initialData.category || 'Heritage & History',
         duration: initialData.duration || '3 Hours',
-        price: initialData.price || '',
         maxGroupSize: initialData.maxGroupSize || '15',
         location: initialData.location || '',
         description: initialData.description || '',
@@ -39,7 +37,6 @@ export function TourModal({ isOpen, onClose, onSave, initialData = null }) {
         title: '',
         category: 'Heritage & History',
         duration: '3 Hours',
-        price: '',
         maxGroupSize: '15',
         location: 'Jodhpur, Rajasthan',
         description: '',
@@ -58,7 +55,6 @@ export function TourModal({ isOpen, onClose, onSave, initialData = null }) {
 
     const payload = {
       ...formData,
-      price: Number(formData.price),
       maxGroupSize: Number(formData.maxGroupSize),
       inclusions: formData.inclusions
         ? formData.inclusions.split(',').map((s) => s.trim()).filter(Boolean)
@@ -135,21 +131,7 @@ export function TourModal({ isOpen, onClose, onSave, initialData = null }) {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3">
-            <div>
-              <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
-                Price (₹) *
-              </label>
-              <input
-                type="number"
-                required
-                value={formData.price}
-                onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                placeholder="1499"
-                className="w-full px-3 py-2 bg-slate-50 focus:bg-white text-xs text-slate-900 rounded-lg border border-slate-200 focus:outline-none focus:border-black"
-              />
-            </div>
-
+          <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1 text-[10px]">
                 Duration

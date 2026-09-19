@@ -56,7 +56,6 @@ export default function PackagesManagementPage() {
     categoryTag: 'North India',
     duration: '4 Hours',
     durationDays: 'Half Day',
-    price: '',
     maxGroupSize: '15',
     location: '',
     description: '',
@@ -105,7 +104,6 @@ export default function PackagesManagementPage() {
       categoryTag: defaultCategory,
       duration: '3 Days / 2 Nights',
       durationDays: '3 Days / 2 Nights',
-      price: '',
       maxGroupSize: '15',
       location: `${defaultCity}, Rajasthan`,
       description: '',
@@ -144,7 +142,6 @@ export default function PackagesManagementPage() {
       categoryTag: resolvedCat,
       duration: pkg.duration || '4 Hours',
       durationDays: pkg.durationDays || '1 Day',
-      price: pkg.price || '',
       maxGroupSize: pkg.maxGroupSize || '15',
       location: pkg.location || '',
       description: pkg.description || '',
@@ -218,8 +215,8 @@ export default function PackagesManagementPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!formData.title || !formData.price) {
-      alert('Please fill in required fields (Title and Price).');
+    if (!formData.title) {
+      alert('Please fill in required title field.');
       return;
     }
 
@@ -246,7 +243,7 @@ export default function PackagesManagementPage() {
       categoryTag: formData.categoryTag || formData.category,
       duration: formData.duration,
       durationDays: formData.durationDays,
-      price: Number(formData.price),
+      price: 0,
       maxGroupSize: Number(formData.maxGroupSize) || 15,
       location: formData.location || `${formData.cityName}, Rajasthan`,
       description: formData.description,
@@ -305,7 +302,7 @@ export default function PackagesManagementPage() {
             </span>
           </div>
           <p className="text-xs text-slate-500 mt-1">
-            Build day-by-day itineraries, pricing, inclusions/exclusions, category tags, and downloadable PDF brochures.
+            Build day-by-day itineraries, inclusions/exclusions, category tags, and downloadable PDF brochures.
           </p>
         </div>
 
@@ -449,17 +446,8 @@ export default function PackagesManagementPage() {
                   )}
                 </div>
 
-                {/* Price & Action Footer */}
-                <div className="pt-3 border-t border-slate-100 flex items-center justify-between">
-                  <div>
-                    <span className="text-[10px] text-slate-400 block font-semibold">Price</span>
-                    <div className="flex items-baseline">
-                      <span className="text-base font-black text-slate-900">
-                        ₹{Number(pkg.price).toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-
+                {/* Action Footer */}
+                <div className="pt-3 border-t border-slate-100 flex items-center justify-end">
                   <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => openEditModal(pkg)}
@@ -494,7 +482,7 @@ export default function PackagesManagementPage() {
                   {editingPackage ? 'Edit Tour Package & Itinerary' : 'Create New Tour Package'}
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
-                  Set package details, day-by-day plan, PDF brochure, pricing, and SEO tags.
+                  Set package details, day-by-day plan, PDF brochure, and SEO tags.
                 </p>
               </div>
               <button
@@ -516,7 +504,7 @@ export default function PackagesManagementPage() {
                     : 'border-transparent text-slate-400 hover:text-slate-700'
                 }`}
               >
-                1. Basic Info & Pricing
+                1. Basic Info
               </button>
               <button
                 type="button"
@@ -642,19 +630,7 @@ export default function PackagesManagementPage() {
                       />
                     </div>
 
-                    <div className="sm:col-span-2">
-                      <label className="text-xs font-bold text-slate-700 block mb-1">
-                        Price (₹ INR) *
-                      </label>
-                      <input
-                        type="number"
-                        required
-                        value={formData.price}
-                        onChange={(e) => setFormData({ ...formData, price: e.target.value })}
-                        placeholder="e.g. 3499"
-                        className="w-full px-3 py-2 text-xs border border-slate-200 rounded-xl focus:border-amber-500 focus:outline-none font-bold text-slate-900"
-                      />
-                    </div>
+
 
                     <div className="sm:col-span-2">
                       <label className="text-xs font-bold text-slate-700 block mb-1">
